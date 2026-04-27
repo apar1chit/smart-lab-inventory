@@ -455,16 +455,26 @@ def bulk_update():
             for cid in chem_ids:
                 chem = Chemical.query.get(int(cid))
                 new_qty = float(request.form.get(f'qty_chem_{cid}'))
+                new_loc = request.form.get(f'loc_chem_{cid}')
+                
+                changed = False
                 if new_qty != chem.quantity:
                     diff = new_qty - chem.quantity
                     chem.quantity = new_qty
-                    # Log the adjustment
+                    changed = True
+                
+                if new_loc != chem.location:
+                    chem.location = new_loc
+                    changed = True
+                
+                if changed:
+                    # Log the adjustment (both qty and location)
                     log = UsageLog(
                         chemical_id=chem.id,
                         user_name=current_user.username,
                         action='Adjustment',
-                        quantity_change=diff,
-                        purpose='Bulk Stock Take'
+                        quantity_change=new_qty - chem.quantity if 'diff' not in locals() else diff,
+                        purpose=f'Bulk Stock Take ({new_loc})'
                     )
                     db.session.add(log)
             
