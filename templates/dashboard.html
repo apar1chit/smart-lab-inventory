@@ -83,12 +83,17 @@
                 <ul class="list-group list-group-flush">
                     {% for log in recent_logs %}
                     <li class="list-group-item p-3">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ log.chemical.name }}</h6>
-                            <small class="text-muted">{{ log.date.strftime('%Y-%m-%d') }}</small>
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <h6 class="mb-1 fw-bold">{{ log.chemical.name }}</h6>
+                            <span class="badge {% if log.action == 'Usage' %}bg-primary{% elif log.action == 'Restock' %}bg-success{% else %}bg-warning text-dark{% endif %} px-2">
+                                {{ log.action }}
+                            </span>
                         </div>
                         <p class="mb-1 text-muted small">
-                            Used <strong>{{ log.quantity_used }} {{ log.chemical.unit }}</strong> by {{ log.user_name }}
+                            <span class="{% if log.quantity_change < 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
+                                {% if log.quantity_change > 0 %}+{% endif %}{{ log.quantity_change }} {{ log.chemical.unit }}
+                            </span> 
+                            by {{ log.user_name }} • <span class="text-muted">{{ log.date.strftime('%d %b') }}</span>
                         </p>
                     </li>
                     {% endfor %}

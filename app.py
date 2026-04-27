@@ -47,8 +47,9 @@ class UsageLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chemical_id = db.Column(db.Integer, db.ForeignKey('chemical.id'), nullable=False)
     user_name = db.Column(db.String(100), nullable=False)
-    quantity_used = db.Column(db.Float, nullable=False)
-    purpose = db.Column(db.String(255), nullable=False)
+    action = db.Column(db.String(50), nullable=False, default='Usage') # Usage, Restock, Adjustment
+    quantity_change = db.Column(db.Float, nullable=False) # Positive for restock, negative for usage
+    purpose = db.Column(db.String(255), nullable=True)
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
 class Glassware(db.Model):
@@ -214,6 +215,17 @@ def add_chemical():
                 category=category
             )
             db.session.add(new_chem)
+            db.session.flush() # Get ID for log
+
+            # Create initial stock log
+            initial_log = UsageLog(
+                chemical_id=new_chem.id, 
+                user_name=current_user.username,
+                action='Initial Addition',
+                quantity_change=quantity,
+                purpose='Opening Stock'
+            )
+            db.session.add(initial_log)
             db.session.commit()
             flash('Chemical added successfully!', 'success')
             return redirect(url_for('chemicals'))
@@ -248,17 +260,25 @@ def log_usage(id):
             flash('Quantity used must be greater than zero.', 'warning')
             return redirect(url_for('chemical_detail', id=id))
 
-        if quantity_used > chemical.quantity:
-            flash('Cannot use more than the available quantity!', 'danger')
+        # Atomic update to prevent race conditions
+        # We deduction only if quantity is still sufficient
+        result = db.session.query(Chemical).filter(
+            Chemical.id == id, 
+            Chemical.quantity >= quantity_used
+        ).update({"quantity": Chemical.quantity - quantity_used}, synchronize_session='fetch')
+        
+        if result == 0:
+            flash('Error: Stock might have changed or is insufficient. Please refresh and try again.', 'danger')
+            db.session.rollback()
             return redirect(url_for('chemical_detail', id=id))
 
-        # Update chemical quantity
-        chemical.quantity -= quantity_used
-        
-        # Create log entry
+        # Create ledger entry
         new_log = UsageLog(
-            chemical_id=id, user_name=user_name, 
-            quantity_used=quantity_used, purpose=purpose
+            chemical_id=id, 
+            user_name=user_name, 
+            action='Usage',
+            quantity_change=-quantity_used, 
+            purpose=purpose
         )
         db.session.add(new_log)
         db.session.commit()
@@ -313,7 +333,21 @@ def add_stock(id):
         if added_quantity <= 0:
             flash('Added quantity must be greater than zero.', 'warning')
         else:
-            chemical.quantity += added_quantity
+            # Atomic update for restock
+            db.session.query(Chemical).filter(Chemical.id == id).update(
+                {"quantity": Chemical.quantity + added_quantity}, 
+                synchronize_session='fetch'
+            )
+            
+            # Create restock log
+            restock_log = UsageLog(
+                chemical_id=id,
+                user_name=current_user.username,
+                action='Restock',
+                quantity_change=added_quantity,
+                purpose='Manual Restock'
+            )
+            db.session.add(restock_log)
             db.session.commit()
             flash(f'Successfully added {added_quantity} {chemical.unit} to stock.', 'success')
     except Exception as e:
@@ -410,6 +444,39 @@ def log_glassware_usage(id):
         flash(f'Error logging glassware: {str(e)}', 'danger')
         db.session.rollback()
     return redirect(url_for('glassware_detail', id=id))
+
+@app.route('/bulk_update', methods=['GET', 'POST'])
+@teacher_required
+def bulk_update():
+    if request.method == 'POST':
+        try:
+            # Handle Chemicals
+            chem_ids = request.form.getlist('chemical_ids')
+            for cid in chem_ids:
+                chem = Chemical.query.get(int(cid))
+                new_qty = float(request.form.get(f'qty_chem_{cid}'))
+                if new_qty != chem.quantity:
+                    diff = new_qty - chem.quantity
+                    chem.quantity = new_qty
+                    # Log the adjustment
+                    log = UsageLog(
+                        chemical_id=chem.id,
+                        user_name=current_user.username,
+                        action='Adjustment',
+                        quantity_change=diff,
+                        purpose='Bulk Stock Take'
+                    )
+                    db.session.add(log)
+            
+            db.session.commit()
+            flash('Inventory updated successfully!', 'success')
+            return redirect(url_for('chemicals'))
+        except Exception as e:
+            flash(f'Error during bulk update: {str(e)}', 'danger')
+            db.session.rollback()
+            
+    chemicals = Chemical.query.order_by(Chemical.name).all()
+    return render_template('bulk_update.html', chemicals=chemicals)
 
 @app.route('/equipment', methods=['GET', 'POST'])
 def equipment():
@@ -508,10 +575,18 @@ def export_logs():
     writer = csv.writer(output)
     
     if log_type == 'chemicals':
-        writer.writerow(['Date', 'Chemical Name', 'User', 'Quantity Used', 'Purpose'])
+        writer.writerow(['Date', 'Chemical Name', 'User', 'Action', 'Change', 'Unit', 'Purpose'])
         logs = UsageLog.query.filter(UsageLog.date.between(start, end)).order_by(UsageLog.date.desc()).all()
         for log in logs:
-            writer.writerow([log.date.strftime('%Y-%m-%d %H:%M'), log.chemical.name, log.user_name, f"{log.quantity_used} {log.chemical.unit}", log.purpose])
+            writer.writerow([
+                log.date.strftime('%Y-%m-%d %H:%M'), 
+                log.chemical.name, 
+                log.user_name, 
+                log.action,
+                log.quantity_change,
+                log.chemical.unit,
+                log.purpose
+            ])
     
     elif log_type == 'glassware':
         writer.writerow(['Date', 'Glassware Name', 'User', 'Action', 'Quantity', 'Purpose'])
