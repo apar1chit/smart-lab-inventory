@@ -14,14 +14,14 @@
 }
 
 [data-theme="dark"] {
-    --soft-bg: #0b1437;
-    --card-bg: #111c44;
-    --text-main: #ffffff;
-    --text-muted: #a3aed1;
-    --card-shadow: 0px 18px 40px rgba(0, 0, 0, 0.5);
-    --input-bg: #1b254b;
-    --border-color: rgba(255,255,255,0.05);
-    --secondary-color: #1b254b;
+    --soft-bg: #121212;
+    --card-bg: #1e1e1e;
+    --text-main: #e0e0e0;
+    --text-muted: #888888;
+    --card-shadow: 0px 10px 30px rgba(0, 0, 0, 0.6);
+    --input-bg: #2d2d2d;
+    --border-color: rgba(255,255,255,0.1);
+    --secondary-color: #333333;
 }
 
 body {
@@ -459,14 +459,53 @@ body::before {
     filter: invert(1) grayscale(100%) brightness(200%);
 }
 
-[data-theme="dark"] .table-hover tbody tr:hover {
-    background-color: rgba(255,255,255,0.02);
+[data-theme="dark"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-main);
     color: var(--text-main);
+}
+
+[data-theme="dark"] .table td {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .table-hover tbody tr:hover td {
+    background-color: var(--secondary-color) !important;
 }
 
 [data-theme="dark"] .table thead th {
     background-color: var(--input-bg) !important;
     color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .list-group-item {
+    background-color: var(--card-bg) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .list-group {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .card-footer {
+    background-color: rgba(255,255,255,0.02);
+    border-top: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .sidebar-nav .nav-link {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .sidebar-nav .nav-link:hover {
+    background-color: var(--input-bg);
+    color: var(--primary-blue);
+}
+
+[data-theme="dark"] .sidebar-nav .nav-link.active {
+    background-color: var(--input-bg);
+    color: var(--primary-blue);
 }
 
 /* Theme Toggle Button Styles */
