@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title mb-0 text-primary"><i class="bi bi-shield-lock-fill me-2"></i>Developer Dashboard</h2>
+    <div class="btn-group">
+        <button class="btn btn-outline-danger shadow-sm" data-bs-toggle="modal" data-bs-target="#resetLogsModal">
+            <i class="bi bi-trash3 me-1"></i> Reset All Logs
+        </button>
+        <button class="btn btn-primary shadow-sm ms-2" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus me-1"></i> Add User
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- User Management Card -->
+    <div class="col-12 col-xl-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0">User Management</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="px-4">USERNAME</th>
+                                <th>ROLE</th>
+                                <th class="text-end px-4">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td class="px-4 fw-medium">{{ user.username }}</td>
+                                <td>
+                                    <span class="badge {% if user.role == 'developer' %}bg-primary{% elif user.role == 'teacher' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ user.role|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="text-end px-4">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">
+                                            Edit
+                                        </button>
+                                        <form action="{{ url_for('dev_delete_user', id=user.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete user {{ user.username }}?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" {% if user.id == current_user.id %}disabled{% endif %}>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Management Card -->
+    <div class="col-12 col-xl-7">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                <h5 class="fw-bold mb-0">System Log Audit</h5>
+            </div>
+            <div class="card-body p-0">
+                <ul class="nav nav-tabs px-4 border-0 mb-3" id="logTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold small text-uppercase" data-bs-toggle="tab" data-bs-target="#chemLogs">Chemicals</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold small text-uppercase" data-bs-toggle="tab" data-bs-target="#glassLogs">Glassware</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold small text-uppercase" data-bs-toggle="tab" data-bs-target="#equipLogs">Equipment</button>
+                    </li>
+                </ul>
+                <div class="tab-content px-0">
+                    <div class="tab-pane fade show active" id="chemLogs">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">DATE</th>
+                                        <th>USER</th>
+                                        <th>ACTION</th>
+                                        <th class="text-end pe-4">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in chemical_logs %}
+                                    <tr>
+                                        <td class="ps-4 small text-muted">{{ log.date.strftime('%d %b, %H:%M') }}</td>
+                                        <td class="fw-medium">{{ log.user_name }}</td>
+                                        <td><span class="small">{{ log.action }}</span></td>
+                                        <td class="text-end pe-4">
+                                            <form action="{{ url_for('dev_delete_log', type='chemical', id=log.id) }}" method="POST" style="display: inline;">
+                                                <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="glassLogs">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">DATE</th>
+                                        <th>USER</th>
+                                        <th>ACTION</th>
+                                        <th class="text-end pe-4">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in glassware_logs %}
+                                    <tr>
+                                        <td class="ps-4 small text-muted">{{ log.date.strftime('%d %b, %H:%M') }}</td>
+                                        <td class="fw-medium">{{ log.user_name }}</td>
+                                        <td><span class="small">{{ log.action }}</span></td>
+                                        <td class="text-end pe-4">
+                                            <form action="{{ url_for('dev_delete_log', type='glassware', id=log.id) }}" method="POST" style="display: inline;">
+                                                <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="equipLogs">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4">DATE</th>
+                                        <th>USER</th>
+                                        <th>ACTION</th>
+                                        <th class="text-end pe-4">ACTION</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in equipment_logs %}
+                                    <tr>
+                                        <td class="ps-4 small text-muted">{{ log.date.strftime('%d %b, %H:%M') }}</td>
+                                        <td class="fw-medium">{{ log.user_name }}</td>
+                                        <td><span class="small">{{ log.action }}</span></td>
+                                        <td class="text-end pe-4">
+                                            <form action="{{ url_for('dev_delete_log', type='equipment', id=log.id) }}" method="POST" style="display: inline;">
+                                                <button type="submit" class="btn btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- All Modals (Placed at bottom for better stability) -->
+
+{% block modals %}
+
+{% for user in users %}
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('dev_edit_user', id=user.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">NEW PASSWORD</label>
+                        <input type="password" name="password" class="form-control bg-light border-0" placeholder="Leave blank to keep same">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">ROLE</label>
+                        <select name="role" class="form-select bg-light border-0">
+                            <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+                            <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Teacher</option>
+                            <option value="developer" {% if user.role == 'developer' %}selected{% endif %}>Developer</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Update User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Modal: Add User -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('dev_add_user') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">USERNAME</label>
+                        <input type="text" name="username" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">PASSWORD</label>
+                        <input type="password" name="password" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">ROLE</label>
+                        <select name="role" class="form-select bg-light border-0">
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="developer">Developer</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Reset Logs -->
+<div class="modal fade" id="resetLogsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-body p-4 text-center">
+                <i class="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i>
+                <h4 class="fw-bold">Wipe All Logs?</h4>
+                <p class="text-muted">This will permanently delete all chemical, glassware, and equipment usage history. This cannot be undone.</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('dev_reset_logs') }}" method="POST">
+                        <button type="submit" class="btn btn-danger px-4 fw-bold">Yes, Reset Everything</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
