@@ -412,6 +412,7 @@ def equipment():
         
         new_equip = Equipment(name=name, status=status)
         db.session.add(new_equip)
+        db.session.commit()
         flash('Equipment added successfully.', 'success')
         return redirect(url_for('equipment'))
         
@@ -453,6 +454,31 @@ def log_equipment_usage(id):
         flash(f'Error logging equipment: {str(e)}', 'danger')
         db.session.rollback()
     return redirect(url_for('equipment_detail', id=id))
+
+@app.route('/equipment/<int:id>/delete', methods=['POST'])
+@teacher_required
+def delete_equipment(id):
+    item = Equipment.query.get_or_404(id)
+    db.session.delete(item)
+    db.session.commit()
+    flash(f'Equipment "{item.name}" deleted.', 'info')
+    return redirect(url_for('equipment'))
+
+@app.route('/equipment/<int:id>/edit', methods=['GET', 'POST'])
+@teacher_required
+def edit_equipment(id):
+    item = Equipment.query.get_or_404(id)
+    if request.method == 'POST':
+        try:
+            item.name = request.form['name']
+            item.status = request.form['status']
+            db.session.commit()
+            flash('Equipment updated.', 'success')
+            return redirect(url_for('equipment_detail', id=id))
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+            db.session.rollback()
+    return render_template('edit_equipment.html', item=item)
 
 @app.route('/export/logs', methods=['POST'])
 @teacher_required

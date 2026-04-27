@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Edit Equipment: {{ item.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('edit_equipment', id=item.id) }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ item.name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="Available" {% if item.status == 'Available' %}selected{% endif %}>Available</option>
+                                <option value="In Use" {% if item.status == 'In Use' %}selected{% endif %}>In Use</option>
+                                <option value="Maintenance" {% if item.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                            </select>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="{{ url_for('equipment_detail', id=item.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
