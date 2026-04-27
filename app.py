@@ -139,7 +139,7 @@ def logout():
 @app.route('/')
 def dashboard():
     total_chemicals = Chemical.query.count()
-    # Define "low stock" as quantity < 50 for simplicity (could be a DB field later)
+    # Define "low stock" as quantity < 50 (standard threshold for demo)
     low_stock_chemicals = Chemical.query.filter(Chemical.quantity < 50).all()
     # Get the latest 5 usage logs
     recent_logs = UsageLog.query.order_by(UsageLog.date.desc()).limit(5).all()

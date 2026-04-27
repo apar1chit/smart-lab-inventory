@@ -54,6 +54,42 @@ body {
     box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
 }
 
+/* Morphing Logo Signature */
+.morph-logo {
+    text-decoration: none !important;
+}
+
+.logo-text-container {
+    position: relative;
+    height: 28px;
+    overflow: hidden;
+    width: 140px;
+    margin-left: 2px;
+}
+
+.logo-text {
+    display: block;
+    height: 100%;
+    line-height: 28px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    white-space: nowrap;
+}
+
+.hover-text {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    font-style: italic;
+}
+
+.morph-logo:hover .main-text {
+    transform: translateY(-100%);
+}
+
+.morph-logo:hover .hover-text {
+    transform: translateY(-100%);
+}
+
 .sidebar-nav .nav-link {
     color: #8f9bba;
     font-weight: 500;
@@ -182,20 +218,119 @@ body {
     border-color: var(--primary-blue);
 }
 
-/* Subtle animation for alerts */
-.alert {
-    border-radius: 12px;
-    border: none;
-    animation: fadeInDown 0.4s ease-out;
+/* Global Smoothness */
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-@keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-10px); }
+/* Smooth Page Entrance */
+.main-content {
+    animation: pageEntrance 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes pageEntrance {
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Enhanced Sidebar Interactivity */
+.sidebar-nav .nav-link {
+    position: relative;
+    z-index: 1;
+}
+
+.sidebar-nav .nav-link::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, rgba(67, 97, 238, 0.1) 0%, rgba(67, 97, 238, 0) 100%);
+    border-radius: 12px;
+    transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    z-index: -1;
+}
+
+.sidebar-nav .nav-link:hover::after {
+    width: 100%;
+}
+
+.sidebar-nav .nav-link i {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-nav .nav-link:hover i {
+    transform: scale(1.2) rotate(5deg);
+    color: var(--primary-blue);
+}
+
+/* Premium Card Interactions */
+.card {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease !important;
+}
+
+.card:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 25px 50px rgba(112, 144, 176, 0.2) !important;
+}
+
+/* Smooth Modal Animation Override */
+.modal.fade .modal-dialog {
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal.show .modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+/* Button Micro-interactions */
+.btn {
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
+}
+
+/* Subtle Table Row Highlight */
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.02);
+}
+
+.stat-card {
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.stat-card:hover::before {
+    transform: translateX(100%);
 }
 
 .stat-card {
     border-left: 4px solid var(--primary-blue);
+    position: relative;
 }
 
 .stat-card-danger {
@@ -206,4 +341,24 @@ body {
     font-size: 2rem;
     font-weight: 700;
     color: var(--text-main);
+}
+
+/* Loading Bar Simulation */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-blue), #4cc9f0);
+    z-index: 9999;
+    animation: loadBar 0.8s ease-out forwards;
+    transform-origin: left;
+}
+
+@keyframes loadBar {
+    0% { transform: scaleX(0); opacity: 1; }
+    90% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(1); opacity: 0; }
 }
