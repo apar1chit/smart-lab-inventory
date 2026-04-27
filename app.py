@@ -88,8 +88,10 @@ with app.app_context():
     if User.query.count() == 0:
         teacher = User(username='teacher', password_hash=generate_password_hash('teacher123'), role='teacher')
         student = User(username='student', password_hash=generate_password_hash('student123'), role='student')
+        dev = User(username='kartik', password_hash=generate_password_hash('kartik@lab'), role='developer')
         db.session.add(teacher)
         db.session.add(student)
+        db.session.add(dev)
         db.session.commit()
 
 @login_manager.user_loader
@@ -100,8 +102,8 @@ def load_user(user_id):
 def teacher_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'teacher':
-            flash('You must be logged in as a teacher to perform this action.', 'danger')
+        if not current_user.is_authenticated or current_user.role not in ['teacher', 'developer']:
+            flash('You must be logged in as a teacher or developer to perform this action.', 'danger')
             return redirect(request.referrer or url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated_function
@@ -109,9 +111,18 @@ def teacher_required(f):
 def student_or_teacher_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash('You must be logged in to perform this action.', 'danger')
-            return redirect(request.referrer or url_for('dashboard'))
+        if not current_user.is_authenticated or current_user.role not in ['student', 'teacher', 'developer']:
+            flash('Access denied.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def developer_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'developer':
+            flash('Access Restricted: Developer Mode only.', 'danger')
+            return redirect(url_for('dashboard'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -522,6 +533,85 @@ def export_logs():
         mimetype="text/csv",
         headers={"Content-disposition": f"attachment; filename={filename}"}
     )
+
+@app.route('/developer/dashboard')
+@developer_required
+def developer_dashboard():
+    users = User.query.all()
+    chemical_logs = UsageLog.query.order_by(UsageLog.date.desc()).all()
+    glassware_logs = GlasswareLog.query.order_by(GlasswareLog.date.desc()).all()
+    equipment_logs = EquipmentLog.query.order_by(EquipmentLog.date.desc()).all()
+    return render_template('developer_dashboard.html', 
+                           users=users, 
+                           chemical_logs=chemical_logs,
+                           glassware_logs=glassware_logs,
+                           equipment_logs=equipment_logs)
+
+@app.route('/developer/user/add', methods=['POST'])
+@developer_required
+def dev_add_user():
+    username = request.form['username']
+    password = request.form['password']
+    role = request.form['role']
+    if User.query.filter_by(username=username).first():
+        flash('Username already exists!', 'danger')
+    else:
+        new_user = User(username=username, password_hash=generate_password_hash(password), role=role)
+        db.session.add(new_user)
+        db.session.commit()
+        flash(f'User {username} added.', 'success')
+    return redirect(url_for('developer_dashboard'))
+
+@app.route('/developer/user/<int:id>/edit', methods=['POST'])
+@developer_required
+def dev_edit_user(id):
+    user = User.query.get_or_404(id)
+    new_password = request.form.get('password')
+    new_role = request.form.get('role')
+    if new_password:
+        user.password_hash = generate_password_hash(new_password)
+    if new_role:
+        user.role = new_role
+    db.session.commit()
+    flash(f'User {user.username} updated.', 'success')
+    return redirect(url_for('developer_dashboard'))
+
+@app.route('/developer/user/<int:id>/delete', methods=['POST'])
+@developer_required
+def dev_delete_user(id):
+    user = User.query.get_or_404(id)
+    if user.id == current_user.id:
+        flash('Cannot delete yourself!', 'danger')
+    else:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} deleted.', 'info')
+    return redirect(url_for('developer_dashboard'))
+
+@app.route('/developer/logs/reset', methods=['POST'])
+@developer_required
+def dev_reset_logs():
+    UsageLog.query.delete()
+    GlasswareLog.query.delete()
+    EquipmentLog.query.delete()
+    db.session.commit()
+    flash('All inventory logs have been reset.', 'warning')
+    return redirect(url_for('developer_dashboard'))
+
+@app.route('/developer/log/<type>/<int:id>/delete', methods=['POST'])
+@developer_required
+def dev_delete_log(type, id):
+    if type == 'chemical':
+        log = UsageLog.query.get_or_404(id)
+    elif type == 'glassware':
+        log = GlasswareLog.query.get_or_404(id)
+    else:
+        log = EquipmentLog.query.get_or_404(id)
+    
+    db.session.delete(log)
+    db.session.commit()
+    flash('Log entry deleted.', 'info')
+    return redirect(url_for('developer_dashboard'))
 
 if __name__ == '__main__':
     with app.app_context():
