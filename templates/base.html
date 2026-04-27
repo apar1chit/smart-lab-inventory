@@ -13,6 +13,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <script>
+        // Theme Initialization (Prevents Flashing)
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
 </head>
 <body>
 
@@ -62,8 +70,15 @@
                 </button>
             </div>
             <div class="d-none d-lg-block"></div>
-            <div class="user-profile dropdown" style="cursor: pointer;">
-                <div class="d-flex align-items-center" {% if current_user.is_authenticated %}data-bs-toggle="dropdown"{% else %}data-bs-toggle="modal" data-bs-target="#loginModal"{% endif %}>
+            <div class="d-flex align-items-center">
+                <!-- Theme Toggle -->
+                <div class="theme-toggle" id="themeToggle" title="Toggle Dark/Light Mode">
+                    <i class="bi bi-moon-stars-fill"></i>
+                    <i class="bi bi-sun-fill"></i>
+                </div>
+
+                <div class="user-profile dropdown" style="cursor: pointer;">
+                    <div class="d-flex align-items-center" {% if current_user.is_authenticated %}data-bs-toggle="dropdown"{% else %}data-bs-toggle="modal" data-bs-target="#loginModal"{% endif %}>
                     {% if current_user.is_authenticated %}
                     <div class="avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 35px; height: 35px;">{{ current_user.username[0]|upper }}</div>
                     <span class="fw-medium text-dark dropdown-toggle">{{ current_user.username|capitalize }}</span>
@@ -185,6 +200,18 @@
             window.location.href = "{{ url_for('developer_dashboard') }}";
         }
     });
+
+    // Theme Toggle Logic
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
 </script>
 </body>
 </html>
