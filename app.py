@@ -258,6 +258,41 @@ def log_usage(id):
 
     return redirect(url_for('chemical_detail', id=id))
 
+@app.route('/chemicals/<int:id>/delete', methods=['POST'])
+@teacher_required
+def delete_chemical(id):
+    chemical = Chemical.query.get_or_404(id)
+    db.session.delete(chemical)
+    db.session.commit()
+    flash(f'Chemical "{chemical.name}" deleted successfully.', 'info')
+    return redirect(url_for('chemicals'))
+
+@app.route('/chemicals/<int:id>/edit', methods=['GET', 'POST'])
+@teacher_required
+def edit_chemical(id):
+    chemical = Chemical.query.get_or_404(id)
+    if request.method == 'POST':
+        try:
+            chemical.name = request.form['name']
+            chemical.formula = request.form['formula']
+            chemical.cas_number = request.form.get('cas_number')
+            chemical.location = request.form['location']
+            chemical.category = request.form.get('category', 'Chemicals')
+            chemical.hazard_category = request.form.get('hazard_category')
+            
+            expiry_date_str = request.form.get('expiry_date')
+            if expiry_date_str:
+                chemical.expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
+            
+            db.session.commit()
+            flash('Chemical updated successfully!', 'success')
+            return redirect(url_for('chemical_detail', id=id))
+        except Exception as e:
+            flash(f'Error updating chemical: {str(e)}', 'danger')
+            db.session.rollback()
+            
+    return render_template('edit_chemical.html', chemical=chemical)
+
 @app.route('/chemicals/<int:id>/add_stock', methods=['POST'])
 @teacher_required
 def add_stock(id):
@@ -292,13 +327,38 @@ def glassware():
         db.session.commit()
         flash('Glassware added successfully.', 'success')
         return redirect(url_for('glassware'))
-        
+            
     items = Glassware.query.all()
     for item in items:
-        # Using 300px width for fast loading in list view
         item.image_url = get_lab_item_image(item.name, width=300)
     standard_glassware = ["Beaker", "Erlenmeyer Flask", "Test Tube", "Pipette", "Burette", "Petri Dish", "Graduated Cylinder", "Volumetric Flask", "Watch Glass", "Crucible", "Funnel", "Stirring Rod"]
     return render_template('glassware.html', items=items, standard_glassware=standard_glassware)
+
+@app.route('/glassware/<int:id>/delete', methods=['POST'])
+@teacher_required
+def delete_glassware(id):
+    item = Glassware.query.get_or_404(id)
+    db.session.delete(item)
+    db.session.commit()
+    flash(f'Glassware "{item.name}" deleted.', 'info')
+    return redirect(url_for('glassware'))
+
+@app.route('/glassware/<int:id>/edit', methods=['GET', 'POST'])
+@teacher_required
+def edit_glassware(id):
+    item = Glassware.query.get_or_404(id)
+    if request.method == 'POST':
+        try:
+            item.name = request.form['name']
+            item.quantity = float(request.form['quantity'])
+            item.condition = request.form['condition']
+            db.session.commit()
+            flash('Glassware updated.', 'success')
+            return redirect(url_for('glassware_detail', id=id))
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+            db.session.rollback()
+    return render_template('edit_glassware.html', item=item)
 
 @app.route('/glassware/<int:id>')
 def glassware_detail(id):
@@ -352,13 +412,11 @@ def equipment():
         
         new_equip = Equipment(name=name, status=status)
         db.session.add(new_equip)
-        db.session.commit()
         flash('Equipment added successfully.', 'success')
         return redirect(url_for('equipment'))
         
     items = Equipment.query.all()
     for item in items:
-        # Using 300px width for fast loading in list view
         item.image_url = get_lab_item_image(item.name, width=300)
     standard_equipment = ["Microscope", "Centrifuge", "Bunsen Burner", "Spectrophotometer", "Hot Plate", "Magnetic Stirrer", "Analytical Balance", "pH Meter", "Incubator", "Autoclave", "Fume Hood", "Water Bath"]
     return render_template('equipment.html', items=items, standard_equipment=standard_equipment)

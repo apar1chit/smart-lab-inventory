@@ -8,6 +8,11 @@
         </a>
         <h2 class="page-title mb-0 d-flex align-items-center">
             {{ item.name }}
+            {% if current_user.is_authenticated and current_user.role == 'teacher' %}
+            <button class="btn btn-sm btn-outline-primary ms-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#editEquipmentModal">
+                <i class="bi bi-pencil me-1"></i> Edit
+            </button>
+            {% endif %}
         </h2>
     </div>
 </div>
@@ -53,8 +58,10 @@
                 <form action="{{ url_for('log_equipment_usage', id=item.id) }}" method="POST">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-medium">User Name</label>
-                            <input type="text" name="user_name" class="form-control bg-light" value="{{ current_user.full_name or current_user.username }}" readonly>
+                            <label class="form-label fw-medium">User / Student Name</label>
+                            <input type="text" name="user_name" class="form-control" 
+                                   value="{{ current_user.full_name or current_user.username }}" 
+                                   {% if current_user.role != 'teacher' %}readonly{% endif %} required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Action</label>
@@ -125,5 +132,36 @@
             </div>
         </div>
     </div>
+</div>
+<!-- Modal for Editing Equipment -->
+<div class="modal fade" id="editEquipmentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title">Edit {{ item.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('edit_equipment', id=item.id) }}" method="POST">
+          <div class="modal-body">
+              <div class="mb-3">
+                  <label class="form-label fw-medium">Equipment Name</label>
+                  <input type="text" name="name" class="form-control" value="{{ item.name }}" required>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label fw-medium">Status</label>
+                  <select name="status" class="form-select" required>
+                      <option value="Available" {% if item.status == 'Available' %}selected{% endif %}>Available</option>
+                      <option value="In Use" {% if item.status == 'In Use' %}selected{% endif %}>In Use</option>
+                      <option value="Maintenance" {% if item.status == 'Maintenance' %}selected{% endif %}>Maintenance</option>
+                  </select>
+              </div>
+          </div>
+          <div class="modal-footer border-top-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

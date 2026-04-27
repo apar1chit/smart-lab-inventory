@@ -69,9 +69,18 @@
                         {% endif %}
                     </td>
                     <td class="text-end pe-4">
-                        <a href="{{ url_for('chemical_detail', id=chem.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                            <i class="bi bi-eye me-1"></i> View Detail
-                        </a>
+                        <div class="btn-group">
+                            <a href="{{ url_for('chemical_detail', id=chem.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2">
+                                <i class="bi bi-eye me-1"></i> Detail
+                            </a>
+                            {% if current_user.role == 'teacher' %}
+                            <form action="{{ url_for('delete_chemical', id=chem.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete this chemical permanently?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
