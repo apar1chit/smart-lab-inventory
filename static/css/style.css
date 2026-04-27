@@ -35,7 +35,7 @@ body {
     height: 100vh;
     z-index: 1000;
     padding: 1.5rem;
-    transition: transform 0.3s ease;
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .sidebar-header {
@@ -88,6 +88,40 @@ body {
 
 .morph-logo:hover .hover-text {
     transform: translateY(-100%);
+}
+
+/* Mobile Sidebar (Offcanvas) Overrides */
+.offcanvas {
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    border-right: none !important;
+    box-shadow: 20px 0 60px rgba(0,0,0,0.1) !important;
+}
+
+.offcanvas-backdrop.show {
+    opacity: 0.4 !important;
+    backdrop-filter: blur(5px);
+    transition: all 0.6s ease;
+}
+
+/* Staggered Slide-in for Mobile Menu Items */
+.offcanvas.show .sidebar-nav .nav-item {
+    animation: menuSlideIn 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.offcanvas.show .sidebar-nav .nav-item:nth-child(1) { animation-delay: 0.1s; }
+.offcanvas.show .sidebar-nav .nav-item:nth-child(2) { animation-delay: 0.15s; }
+.offcanvas.show .sidebar-nav .nav-item:nth-child(3) { animation-delay: 0.2s; }
+.offcanvas.show .sidebar-nav .nav-item:nth-child(4) { animation-delay: 0.25s; }
+
+@keyframes menuSlideIn {
+    from { 
+        opacity: 0; 
+        transform: translateX(-30px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
 }
 
 .sidebar-nav .nav-link {
