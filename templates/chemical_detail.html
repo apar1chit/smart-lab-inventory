@@ -8,7 +8,7 @@
         </a>
         <h2 class="page-title mb-0 d-flex align-items-center">
             {{ chemical.name }}
-            {% if current_user.is_authenticated and current_user.role == 'teacher' %}
+            {% if current_user.is_authenticated and current_user.role in ['teacher', 'developer'] %}
             <button class="btn btn-sm btn-outline-success ms-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addStockModal">
                 <i class="bi bi-plus-circle me-1"></i> Add Stock
             </button>

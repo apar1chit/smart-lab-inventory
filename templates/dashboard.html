@@ -107,7 +107,7 @@
         </div>
     </div>
 </div>
-{% if current_user.is_authenticated and current_user.role == 'teacher' %}
+{% if current_user.is_authenticated and current_user.role in ['teacher', 'developer'] %}
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
