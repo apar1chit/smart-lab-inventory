@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="page-title">Dashboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1">Total Chemicals</h6>
+                    <div class="stat-value text-primary">{{ total_chemicals }}</div>
+                </div>
+                <div class="fs-1 text-primary opacity-50">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card-danger p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1">Low Stock Alerts</h6>
+                    <div class="stat-value text-danger">{{ low_stock_chemicals|length }}</div>
+                </div>
+                <div class="fs-1 text-danger opacity-50">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 border-start border-success border-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1">Recent Usage logs</h6>
+                    <div class="stat-value text-success">{{ recent_logs|length }}</div>
+                </div>
+                <div class="fs-1 text-success opacity-50">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-exclamation-circle text-danger me-2"></i>Low Stock Items</span>
+                <a href="{{ url_for('chemicals') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if low_stock_chemicals %}
+                <ul class="list-group list-group-flush">
+                    {% for chem in low_stock_chemicals %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <fw-bold>{{ chem.name }}</fw-bold> <small class="text-muted">({{ chem.formula }})</small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">{{ chem.quantity }} {{ chem.unit }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    <i class="bi bi-check-circle fs-3 d-block mb-2 text-success"></i>
+                    All chemicals are sufficiently stocked.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-journal-text text-primary me-2"></i>Recent Usage</span>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_logs %}
+                <ul class="list-group list-group-flush">
+                    {% for log in recent_logs %}
+                    <li class="list-group-item p-3">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ log.chemical.name }}</h6>
+                            <small class="text-muted">{{ log.date.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                        <p class="mb-1 text-muted small">
+                            Used <strong>{{ log.quantity_used }} {{ log.chemical.unit }}</strong> by {{ log.user_name }}
+                        </p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="p-4 text-center text-muted">
+                    No recent usage logged.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% if current_user.is_authenticated and current_user.role == 'teacher' %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+            <div class="card-header bg-dark text-white p-3">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Export Inventory Logs</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="{{ url_for('export_logs') }}" method="POST" class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Log Category</label>
+                        <select name="log_type" class="form-select" required>
+                            <option value="chemicals">Chemicals Usage</option>
+                            <option value="glassware">Glassware History</option>
+                            <option value="equipment">Equipment Usage</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">Start Date</label>
+                        <input type="date" name="start_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-medium">End Date</label>
+                        <input type="date" name="end_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100 shadow-sm">
+                            <i class="bi bi-download me-2"></i>Export to CSV (Excel)
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-3 text-muted small">
+                    <i class="bi bi-info-circle me-1"></i> Data will be exported in CSV format, which can be opened in Microsoft Excel, Google Sheets, or any PDF converter.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

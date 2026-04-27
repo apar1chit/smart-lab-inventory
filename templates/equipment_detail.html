@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('equipment') }}" class="text-decoration-none text-muted mb-2 d-inline-block">
+            <i class="bi bi-arrow-left me-1"></i> Back to Equipment
+        </a>
+        <h2 class="page-title mb-0 d-flex align-items-center">
+            {{ item.name }}
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Info & Image Card -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body text-center p-0" style="background-color: #f8f9fa; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <img src="{{ item.image_url }}" class="img-fluid" style="object-fit: cover; height: 250px; width: 100%;" alt="{{ item.name }}">
+            </div>
+            <div class="card-body pt-3">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted fw-medium w-50">Current Status</td>
+                            <td class="fw-bold fs-5">
+                                {% if item.status == 'Available' %}
+                                <span class="text-success"><i class="bi bi-check-circle me-1"></i>Available</span>
+                                {% elif item.status == 'In Use' %}
+                                <span class="text-primary"><i class="bi bi-play-circle me-1"></i>In Use</span>
+                                {% elif item.status == 'Maintenance' %}
+                                <span class="text-warning"><i class="bi bi-tools me-1"></i>Maintenance</span>
+                                {% else %}
+                                <span class="text-secondary">{{ item.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Logging & History Card -->
+    <div class="col-md-7">
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Log Usage / Status</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('log_equipment_usage', id=item.id) }}" method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">User Name</label>
+                            <input type="text" name="user_name" class="form-control bg-light" value="{{ current_user.full_name or current_user.username }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Action</label>
+                            <select name="action" class="form-select" required>
+                                <option value="Started Using">Start Using</option>
+                                <option value="Finished Using">Finish Using</option>
+                                <option value="Reported Issue">Report Issue / Needs Maintenance</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Purpose / Details</label>
+                        <input type="text" name="purpose" class="form-control" placeholder="What experiment? Or what issue?" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        Submit Log
+                    </button>
+                </form>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-lock text-muted fs-1 d-block mb-2"></i>
+                    <p class="text-muted">You must be logged in as a Student or Teacher to update equipment status.</p>
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">Login Now</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Activity History</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td class="ps-4 text-muted small">{{ log.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="fw-medium">{{ log.user_name }}</td>
+                                <td>
+                                    {% if log.action == 'Started Using' %}
+                                    <span class="badge bg-primary"><i class="bi bi-play-circle me-1"></i>Started Using</span>
+                                    {% elif log.action == 'Finished Using' %}
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Finished Using</span>
+                                    {% elif log.action == 'Reported Issue' %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Reported Issue</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small text-truncate" style="max-width: 200px;" title="{{ log.purpose }}">{{ log.purpose }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No activity logs recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

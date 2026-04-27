@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{{ url_for('chemicals') }}" class="text-decoration-none text-muted mb-2 d-inline-block">
+            <i class="bi bi-arrow-left"></i> Back to Inventory
+        </a>
+        <h2 class="page-title mb-0 d-flex align-items-center">
+            {{ chemical.name }}
+            {% if current_user.is_authenticated and current_user.role == 'teacher' %}
+            <button class="btn btn-sm btn-outline-success ms-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                <i class="bi bi-plus-circle me-1"></i> Add Stock
+            </button>
+            {% endif %}
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chemical Info Card -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Chemical Details</h5>
+            </div>
+            
+            <div class="card-body text-center p-3" style="background-color: #f8f9fa; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <img src="https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{{ chemical.name|urlencode }}/PNG" 
+                     alt="Structure of {{ chemical.name }}" 
+                     class="img-fluid rounded" 
+                     style="max-height: 180px; mix-blend-mode: multiply;"
+                     onerror="if(!this.fallbackLoaded){ this.fallbackLoaded=true; this.src='{{ fallback_image }}'; this.style.mixBlendMode='normal'; this.style.objectFit='cover'; this.style.width='100%'; } else { this.src='https://unpkg.com/lucide-static@latest/icons/flask-conical.svg'; this.style.opacity='0.5'; }">
+            </div>
+
+            <div class="card-body pt-2">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted fw-medium w-50">Formula</td>
+                            <td class="fw-bold">{{ chemical.formula }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-medium">CAS Number</td>
+                            <td>{{ chemical.cas_number or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-medium">Location</td>
+                            <td><span class="badge bg-light text-dark border">{{ chemical.location }}</span></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-medium">Hazard</td>
+                            <td>
+                                {% if chemical.hazard_category %}
+                                <span class="badge bg-warning text-dark">{{ chemical.hazard_category }}</span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-medium">Expiry Date</td>
+                            <td>{{ chemical.expiry_date.strftime('%Y-%m-%d') if chemical.expiry_date else 'N/A' }}</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td class="text-muted fw-medium pt-3">Current Stock</td>
+                            <td class="pt-3">
+                                <span class="fs-4 fw-bold {% if chemical.quantity < 50 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ chemical.quantity }} {{ chemical.unit }}
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Logging & History Card -->
+    <div class="col-md-7 mb-4">
+        <div class="card shadow-sm mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Log Usage</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('log_usage', id=chemical.id) }}" method="POST">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">User Name</label>
+                            <input type="text" name="user_name" class="form-control" placeholder="Who is using it?" value="{{ current_user.full_name or current_user.username }}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Quantity Used ({{ chemical.unit }})</label>
+                            <input type="number" step="0.01" min="0.01" max="{{ chemical.quantity }}" name="quantity_used" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Purpose / Experiment</label>
+                        <input type="text" name="purpose" class="form-control" placeholder="What is it being used for?" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" {% if chemical.quantity <= 0 %}disabled{% endif %}>
+                        Submit Usage Log
+                    </button>
+                    {% if chemical.quantity <= 0 %}
+                    <small class="text-danger d-block mt-2">Out of stock! Cannot log usage.</small>
+                    {% endif %}
+                </form>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-lock text-muted fs-1 d-block mb-2"></i>
+                    <p class="text-muted">You must be logged in as a Student or Teacher to log usage.</p>
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loginModal">Login Now</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Usage History</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover table-striped mb-0 small">
+                        <thead class="bg-light sticky-top">
+                            <tr>
+                                <th class="ps-3">Date</th>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td class="ps-3 text-muted">{{ log.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td class="fw-medium">{{ log.user_name }}</td>
+                                <td class="text-danger">-{{ log.quantity_used }} {{ chemical.unit }}</td>
+                                <td>{{ log.purpose }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3 text-muted">No usage history recorded.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Adding Stock -->
+<div class="modal fade" id="addStockModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title">Add Stock for {{ chemical.name }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('add_stock', id=chemical.id) }}" method="POST">
+          <div class="modal-body">
+              <div class="mb-3">
+                  <label class="form-label fw-medium">Quantity to Add ({{ chemical.unit }})</label>
+                  <input type="number" step="0.01" min="0.01" name="added_quantity" class="form-control" required>
+              </div>
+          </div>
+          <div class="modal-footer border-top-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-success">Add to Inventory</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
