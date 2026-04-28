@@ -36,9 +36,8 @@ jobs:
           # Create a dummy keystore for the build
           keytool -genkey -v -keystore android.keystore -alias android -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=SmartLab, OU=Lab, O=SmartLab, L=City, S=State, C=US"
           
-          # Initialize TWA project non-interactively
-          mkdir -p twa-project
-          bubblewrap init --manifest="https://smart-lab-inventory-bt4n.onrender.com/static/manifest.json" \
+          # Initialize TWA project non-interactively by piping 'yes' to accept defaults
+          yes "" | bubblewrap init --manifest="https://smart-lab-inventory-bt4n.onrender.com/static/manifest.json" \
           --directory="./twa-project" \
           --metaData='{
             "appName":"Smart Lab Inventory",
@@ -56,7 +55,7 @@ jobs:
             "splashScreenFadeOutDuration":300,
             "shortcuts":[],
             "webmanifest":"/static/manifest.json"
-          }' --no-prompt
+          }' || true
           
           cd twa-project
           # Build the APK
