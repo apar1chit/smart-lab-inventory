@@ -18,14 +18,25 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
       - name: Build APK from PWA
         run: |
+          # Pre-configure Bubblewrap to avoid interactive prompts
+          mkdir -p ~/.bubblewrap
+          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"/usr/local/lib/android/sdk\"}" > ~/.bubblewrap/config.json
+          
           # Create a dummy keystore for the build
           keytool -genkey -v -keystore android.keystore -alias android -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=SmartLab, OU=Lab, O=SmartLab, L=City, S=State, C=US"
           
+          # Initialize TWA project non-interactively
           bubblewrap init --manifest="https://smart-lab-inventory-bt4n.onrender.com/static/manifest.json" \
           --directory="./twa-project" \
           --metaData='{
@@ -44,12 +55,10 @@ jobs:
             "splashScreenFadeOutDuration":300,
             "shortcuts":[],
             "webmanifest":"/static/manifest.json"
-          }'
-          
-          # Configure bubblewrap to use the generated keystore
-          echo '{"jdkPath":"/usr/lib/jvm/java-11-openjdk-amd64","androidSdkPath":"/usr/local/lib/android/sdk"}' > ~/.bubblewrap/config.json
+          }' --no-prompt
           
           cd twa-project
+          # Build the APK
           bubblewrap build --signingKeyPath="../android.keystore" --signingKeyAlias="android" --signingKeyPassword="password" --signingStorePassword="password" --no-prompt
 
       - name: Upload APK Artifact
