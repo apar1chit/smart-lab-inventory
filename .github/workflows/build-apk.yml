@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -53,7 +53,7 @@ jobs:
           bubblewrap build --signingKeyPath="../android.keystore" --signingKeyAlias="android" --signingKeyPassword="password" --signingStorePassword="password" --no-prompt
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: SmartLab-Inventory-APK
           path: twa-project/*.apk
