@@ -1,13 +1,14 @@
 {
   "name": "Smart Lab Inventory",
   "short_name": "SmartLab",
+  "description": "Professional laboratory inventory and management system.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay"],
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#6366f1",
-  "description": "Smart Laboratory Inventory Management System",
-  "orientation": "portrait",
-  "scope": "/",
   "icons": [
     {
       "src": "/static/icons/icon-192x192.png",

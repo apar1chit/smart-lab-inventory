@@ -18,10 +18,6 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key-12345')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-@app.route('/sw.js')
-def serve_sw():
-    return app.send_static_file('sw.js')
-
 db = SQLAlchemy(app)
 
 login_manager = LoginManager()
@@ -701,6 +697,10 @@ def dev_delete_log(type, id):
     db.session.commit()
     flash('Log entry deleted.', 'info')
     return redirect(url_for('developer_dashboard'))
+
+@app.route('/.well-known/assetlinks.json')
+def assetlinks():
+    return app.send_static_file('.well-known/assetlinks.json')
 
 if __name__ == '__main__':
     with app.app_context():

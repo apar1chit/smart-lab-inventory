@@ -18,26 +18,17 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
       - name: Build APK from PWA
         run: |
-          # Pre-configure Bubblewrap to avoid interactive prompts
-          mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"/usr/local/lib/android/sdk\"}" > ~/.bubblewrap/config.json
-          
-          # Create a dummy keystore for the build
+          # Create a dummy keystore for the build (Generating it fresh each time)
+          # Note: In production, you should use a persistent keystore from GitHub Secrets.
           keytool -genkey -v -keystore android.keystore -alias android -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=SmartLab, OU=Lab, O=SmartLab, L=City, S=State, C=US"
           
-          # Initialize TWA project non-interactively by piping 'yes' to accept defaults
-          yes "" | bubblewrap init --manifest="https://smart-lab-inventory-bt4n.onrender.com/static/manifest.json" \
+          # Initialize TWA project using the LOCAL manifest
+          bubblewrap init --manifest="./static/manifest.json" \
           --directory="./twa-project" \
           --metaData='{
             "appName":"Smart Lab Inventory",
@@ -55,11 +46,20 @@ jobs:
             "splashScreenFadeOutDuration":300,
             "shortcuts":[],
             "webmanifest":"/static/manifest.json"
-          }' || true
+          }'
           
-          cd twa-project
+          # Configure bubblewrap
+          echo '{"jdkPath":"/usr/lib/jvm/java-11-openjdk-amd64","androidSdkPath":"/usr/local/lib/android/sdk"}' > ~/.bubblewrap/config.json
+          
           # Build the APK
+          cd twa-project
           bubblewrap build --signingKeyPath="../android.keystore" --signingKeyAlias="android" --signingKeyPassword="password" --signingStorePassword="password" --no-prompt
+          
+      - name: Output SHA256 Fingerprint
+        run: |
+          echo "--- IMPORTANT: COPY THIS SHA256 FINGERPRINT TO YOUR ASSETLINKS.JSON ---"
+          keytool -list -v -keystore android.keystore -alias android -storepass password | grep SHA256
+          echo "-----------------------------------------------------------------------"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
