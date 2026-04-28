@@ -36,6 +36,9 @@ jobs:
           # Create a dummy keystore for the build
           keytool -genkey -v -keystore android.keystore -alias android -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=SmartLab, OU=Lab, O=SmartLab, L=City, S=State, C=US"
           
+          # Create the directory beforehand to avoid interactive prompts
+          mkdir -p ./twa-project
+          
           # Initialize TWA project non-interactively
           bubblewrap init --manifest="https://smart-lab-inventory-bt4n.onrender.com/static/manifest.json" \
           --directory="./twa-project" \
