@@ -23,12 +23,16 @@
                             <input type="text" name="location" class="form-control" value="{{ chemical.location }}" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Category</label>
-                            <select name="category" class="form-select">
-                                <option value="Chemicals" {% if chemical.category == 'Chemicals' %}selected{% endif %}>Chemicals</option>
-                                <option value="Reagents" {% if chemical.category == 'Reagents' %}selected{% endif %}>Reagents</option>
-                                <option value="Indicators" {% if chemical.category == 'Indicators' %}selected{% endif %}>Indicators</option>
-                                <option value="Miscellaneous" {% if chemical.category == 'Miscellaneous' %}selected{% endif %}>Miscellaneous</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Unit of Measurement</label>
+                            <select name="unit" class="form-select" required>
+                                <option value="g" {% if chemical.unit == 'g' %}selected{% endif %}>g (Grams)</option>
+                                <option value="mg" {% if chemical.unit == 'mg' %}selected{% endif %}>mg (Milligrams)</option>
+                                <option value="kg" {% if chemical.unit == 'kg' %}selected{% endif %}>kg (Kilograms)</option>
+                                <option value="mL" {% if chemical.unit == 'mL' %}selected{% endif %}>mL (Milliliters)</option>
+                                <option value="L" {% if chemical.unit == 'L' %}selected{% endif %}>L (Liters)</option>
                             </select>
                         </div>
                         <div class="d-grid gap-2">

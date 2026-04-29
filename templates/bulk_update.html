@@ -51,7 +51,15 @@
                                        class="form-control form-control-sm fw-bold border-primary-subtle text-primary" 
                                        value="{{ chem.quantity }}">
                             </td>
-                            <td class="pe-4 text-muted small">{{ chem.unit }}</td>
+                            <td class="pe-4">
+                                <select name="unit_chem_{{ chem.id }}" class="form-select form-select-sm border-primary-subtle py-0" style="font-size: 0.75rem;">
+                                    <option value="g" {% if chem.unit == 'g' %}selected{% endif %}>g</option>
+                                    <option value="mg" {% if chem.unit == 'mg' %}selected{% endif %}>mg</option>
+                                    <option value="kg" {% if chem.unit == 'kg' %}selected{% endif %}>kg</option>
+                                    <option value="mL" {% if chem.unit == 'mL' %}selected{% endif %}>mL</option>
+                                    <option value="L" {% if chem.unit == 'L' %}selected{% endif %}>L</option>
+                                </select>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

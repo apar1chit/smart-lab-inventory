@@ -428,6 +428,7 @@ def edit_chemical(id):
             chemical.formula = request.form['formula']
             chemical.cas_number = request.form.get('cas_number')
             chemical.location = request.form['location']
+            chemical.unit = request.form['unit']
             chemical.category = request.form.get('category', 'Chemicals')
             chemical.hazard_category = request.form.get('hazard_category')
             
@@ -585,6 +586,11 @@ def bulk_update():
                 
                 if new_loc != chem.location:
                     chem.location = new_loc
+                    changed = True
+                
+                new_unit = request.form.get(f'unit_chem_{cid}')
+                if new_unit != chem.unit:
+                    chem.unit = new_unit
                     changed = True
                 
                 if changed:
