@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="profile-container animate__animated animate__fadeIn">
+    <div class="row g-4">
+        <!-- Left Column: Identity & Contact -->
+        <div class="col-lg-4">
+            <!-- Digital ID Card -->
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 id-card-glow">
+                <div class="id-card-header p-4 text-center">
+                    <div class="avatar-wrapper-lg mb-3">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ current_user.username }}&backgroundColor=b6e3f4,c0aede,d1d4f9" 
+                             alt="Avatar" class="profile-avatar-lg shadow-lg border border-4 border-white">
+                        <div class="online-status-pulse"></div>
+                    </div>
+                    <h3 class="fw-bold text-white mb-0">{{ current_user.full_name or current_user.username|capitalize }}</h3>
+                    <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-3 py-1 mt-2 tracking-wider">
+                        {{ current_user.role|upper }}
+                    </span>
+                </div>
+                <div class="card-body p-4 bg-white">
+                    <div class="id-card-detail mb-3">
+                        <label class="text-muted tiny fw-bold text-uppercase">Roll Number</label>
+                        <div class="fw-bold fs-5 text-dark">{{ current_user.roll_number or 'N/A' }}</div>
+                    </div>
+                    <div class="id-card-detail mb-3">
+                        <label class="text-muted tiny fw-bold text-uppercase">University Email</label>
+                        <div class="text-primary fw-medium">{{ current_user.email or 'Not Set' }}</div>
+                    </div>
+                    <div class="id-card-detail mb-4">
+                        <label class="text-muted tiny fw-bold text-uppercase">Contact Number</label>
+                        <div class="fw-medium">{{ current_user.phone or 'Not Set' }}</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button class="btn btn-primary rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lab Standing Card -->
+            <div class="card border-0 shadow-sm rounded-4 glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-4 d-flex align-items-center">
+                    <i class="bi bi-shield-check text-success me-2"></i>Lab Standing
+                </h5>
+                <div class="standing-row d-flex justify-content-between mb-3">
+                    <span class="text-muted">Safety Clearance</span>
+                    <span class="fw-bold text-success">Verified</span>
+                </div>
+                <div class="standing-row d-flex justify-content-between mb-3">
+                    <span class="text-muted">Inventory Access</span>
+                    <span class="fw-bold">Unrestricted</span>
+                </div>
+                <div class="standing-row d-flex justify-content-between">
+                    <span class="text-muted">Last Activity</span>
+                    <span class="fw-bold small">{% if all_logs %}{{ all_logs[0].data.date.strftime('%d %b, %H:%M') }}{% else %}N/A{% endif %}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Stats & Timeline -->
+        <div class="col-lg-8">
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center stat-card-hover bg-gradient-primary">
+                        <div class="fs-2 fw-bold text-white">{{ total_sessions }}</div>
+                        <div class="text-white bg-opacity-75 small text-uppercase">Total Actions</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center stat-card-hover bg-gradient-success">
+                        <div class="fs-2 fw-bold text-white">{{ chemical_logs|length }}</div>
+                        <div class="text-white bg-opacity-75 small text-uppercase">Chem Sessions</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 text-center stat-card-hover bg-gradient-info">
+                        <div class="fs-2 fw-bold text-white">{{ glassware_logs|length + equipment_logs|length }}</div>
+                        <div class="text-white bg-opacity-75 small text-uppercase">Gear Interactions</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>My Lab Ledger</h5>
+                    <div class="badge bg-light text-muted rounded-pill px-3">Recent Activity</div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="timeline-container-v2 p-4">
+                        {% for entry in all_logs %}
+                        <div class="timeline-item-v2 d-flex mb-3">
+                            <div class="timeline-marker me-3">
+                                <div class="marker-dot {% if entry.type == 'chemical' %}bg-primary{% elif entry.type == 'glassware' %}bg-success{% else %}bg-info{% endif %}"></div>
+                                <div class="marker-line"></div>
+                            </div>
+                            <div class="timeline-card-v2 p-3 rounded-4 bg-light shadow-hover flex-grow-1 border-start border-4 {% if entry.type == 'chemical' %}border-primary{% elif entry.type == 'glassware' %}border-success{% else %}border-info{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="fw-bold text-dark">
+                                            {% if entry.type == 'chemical' %}{{ entry.data.action }} {{ entry.data.chemical.name }}
+                                            {% elif entry.type == 'glassware' %}{{ entry.data.action }} {{ entry.data.glassware.name }}
+                                            {% else %}{{ entry.data.action }} {{ entry.data.equipment.name }}{% endif %}
+                                        </span>
+                                        <div class="text-muted small mt-1 italic">"{{ entry.data.purpose or 'General maintenance' }}"</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small fw-bold text-dark">{{ entry.data.date.strftime('%H:%M') }}</div>
+                                        <div class="tiny text-muted">{{ entry.data.date.strftime('%d %b') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                            <div class="text-center py-5 text-muted opacity-50">
+                                <i class="bi bi-journal-x fs-1"></i>
+                                <p class="mt-2">No activity recorded for your account.</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0 px-4 mt-2">
+                <h5 class="modal-title fw-bold">Update Personal Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('update_profile') }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">FULL NAME</label>
+                        <input type="text" name="full_name" class="form-control" value="{{ current_user.full_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">EMAIL ADDRESS</label>
+                        <input type="email" name="email" class="form-control" value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">PHONE NUMBER</label>
+                        <input type="text" name="phone" class="form-control" value="{{ current_user.phone }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-3">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .id-card-glow {
+        box-shadow: 0 10px 30px rgba(67, 97, 238, 0.2);
+        transition: transform 0.3s ease;
+    }
+    .id-card-header {
+        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    }
+    .avatar-wrapper-lg {
+        position: relative;
+        display: inline-block;
+    }
+    .profile-avatar-lg {
+        width: 130px;
+        height: 130px;
+        border-radius: 40px;
+        background: white;
+    }
+    .online-status-pulse {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        width: 15px;
+        height: 15px;
+        background: #4cc9f0;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.7);
+        animation: pulse-online 2s infinite;
+    }
+    @keyframes pulse-online {
+        0% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(76, 201, 240, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(76, 201, 240, 0); }
+    }
+    .bg-gradient-primary { background: linear-gradient(135deg, #4361ee 0%, #4895ef 100%); }
+    .bg-gradient-success { background: linear-gradient(135deg, #2ec4b6 0%, #cbf3f0 100%); }
+    .bg-gradient-info { background: linear-gradient(135deg, #4cc9f0 0%, #4895ef 100%); }
+    
+    .stat-card-hover { transition: transform 0.3s ease; cursor: default; }
+    .stat-card-hover:hover { transform: translateY(-5px); }
+
+    .timeline-marker { display: flex; flex-direction: column; align-items: center; }
+    .marker-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 20px; }
+    .marker-line { flex-grow: 1; width: 2px; background: rgba(0,0,0,0.05); }
+    .timeline-item-v2:last-child .marker-line { display: none; }
+    
+    .tracking-wider { letter-spacing: 0.1em; font-size: 0.7rem; }
+    .tiny { font-size: 0.65rem; }
+    .italic { font-style: italic; }
+</style>
+{% endblock %}

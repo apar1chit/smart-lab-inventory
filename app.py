@@ -27,9 +27,13 @@ login_manager.init_app(app)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
+    # Note: Use .lower() when setting or querying usernames to maintain consistency
     password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(50), nullable=False) # 'teacher' or 'student'
+    role = db.Column(db.String(50), nullable=False) # 'teacher', 'student', or 'developer'
     full_name = db.Column(db.String(150), nullable=True)
+    roll_number = db.Column(db.String(50), nullable=True)
+    email = db.Column(db.String(150), nullable=True)
+    phone = db.Column(db.String(20), nullable=True)
 class Chemical(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
@@ -145,15 +149,15 @@ def developer_required(f):
 
 @app.route('/login', methods=['POST'])
 def login():
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password')
-    user = User.query.filter(User.username.ilike(username)).first()
+    username = request.form['username'].lower()
+    password = request.form['password']
+    user = User.query.filter(func.lower(User.username) == username).first()
     if user and check_password_hash(user.password_hash, password):
         login_user(user)
         flash(f'Logged in successfully as {user.role.capitalize()}.', 'success')
     else:
         flash('Invalid username or password.', 'danger')
-    return redirect(request.referrer or url_for('dashboard'))
+    return redirect(url_for('profile') if user and user.role in ['student', 'developer'] else url_for('dashboard'))
 
 @app.route('/logout')
 @login_required
@@ -161,6 +165,55 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('dashboard'))
+
+@app.route('/profile')
+@login_required
+def profile():
+    # Fetch all activity for the current user (case-insensitive username match)
+    username_lower = current_user.username.lower()
+    chemical_logs = UsageLog.query.filter(func.lower(UsageLog.user_name) == username_lower).order_by(UsageLog.date.desc()).all()
+    glassware_logs = GlasswareLog.query.filter(func.lower(UsageLog.user_name) == username_lower).order_by(GlasswareLog.date.desc()).all()
+    equipment_logs = EquipmentLog.query.filter(func.lower(UsageLog.user_name) == username_lower).order_by(EquipmentLog.date.desc()).all()
+    
+    # Calculate stats
+    total_sessions = len(chemical_logs) + len(glassware_logs) + len(equipment_logs)
+    
+    # Get most used chemicals for this user
+    user_most_used = db.session.query(
+        Chemical.name, func.count(UsageLog.id)
+    ).join(UsageLog).filter(func.lower(UsageLog.user_name) == username_lower).group_by(Chemical.name).order_by(func.count(UsageLog.id).desc()).limit(3).all()
+    
+    # Merge and sort all logs for the timeline
+    all_logs = []
+    for log in chemical_logs[:10]: all_logs.append({'type': 'chemical', 'data': log})
+    for log in glassware_logs[:10]: all_logs.append({'type': 'glassware', 'data': log})
+    for log in equipment_logs[:10]: all_logs.append({'type': 'equipment', 'data': log})
+    
+    # Sort by date
+    all_logs.sort(key=lambda x: x['data'].date, reverse=True)
+    all_logs = all_logs[:15] # Keep top 15
+    
+    return render_template('profile.html', 
+                           all_logs=all_logs,
+                           chemical_logs=chemical_logs,
+                           glassware_logs=glassware_logs,
+                           equipment_logs=equipment_logs,
+                           total_sessions=total_sessions,
+                           user_most_used=user_most_used)
+
+@app.route('/profile/update', methods=['POST'])
+@login_required
+def update_profile():
+    try:
+        current_user.full_name = request.form.get('full_name')
+        current_user.email = request.form.get('email')
+        current_user.phone = request.form.get('phone')
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+    except Exception as e:
+        flash(f'Error updating profile: {str(e)}', 'danger')
+        db.session.rollback()
+    return redirect(url_for('profile'))
 
 @app.route('/')
 def dashboard():
@@ -340,7 +393,7 @@ def add_chemical():
             # Create initial stock log
             initial_log = UsageLog(
                 chemical_id=new_chem.id, 
-                user_name=current_user.username,
+                user_name=current_user.username.lower(),
                 action='Initial Addition',
                 quantity_change=quantity,
                 purpose='Opening Stock'
@@ -395,7 +448,7 @@ def log_usage(id):
         # Create ledger entry
         new_log = UsageLog(
             chemical_id=id, 
-            user_name=user_name, 
+            user_name=user_name.lower(), 
             action='Usage',
             quantity_change=-quantity_used, 
             purpose=purpose
@@ -463,7 +516,7 @@ def add_stock(id):
             # Create restock log
             restock_log = UsageLog(
                 chemical_id=id,
-                user_name=current_user.username,
+                user_name=current_user.username.lower(),
                 action='Restock',
                 quantity_change=added_quantity,
                 purpose='Manual Restock'
@@ -557,7 +610,7 @@ def log_glassware_usage(id):
             # We assume they break it while using it, so it's already deducted from available stock. 
             pass
 
-        new_log = GlasswareLog(glassware_id=id, user_name=user_name, action=action, quantity=quantity, purpose=purpose)
+        new_log = GlasswareLog(glassware_id=id, user_name=user_name.lower(), action=action, quantity=quantity, purpose=purpose)
         db.session.add(new_log)
         db.session.commit()
         flash('Glassware log added successfully.', 'success')
@@ -597,7 +650,7 @@ def bulk_update():
                     # Log the adjustment (both qty and location)
                     log = UsageLog(
                         chemical_id=chem.id,
-                        user_name=current_user.username,
+                        user_name=current_user.username.lower(),
                         action='Adjustment',
                         quantity_change=new_qty - chem.quantity if 'diff' not in locals() else diff,
                         purpose=f'Bulk Stock Take ({new_loc})'
@@ -660,7 +713,7 @@ def log_equipment_usage(id):
         elif action == 'Reported Issue':
             item.status = 'Maintenance'
 
-        new_log = EquipmentLog(equipment_id=id, user_name=user_name, action=action, purpose=purpose)
+        new_log = EquipmentLog(equipment_id=id, user_name=user_name.lower(), action=action, purpose=purpose)
         db.session.add(new_log)
         db.session.commit()
         flash('Equipment log added successfully.', 'success')
@@ -761,7 +814,7 @@ def developer_dashboard():
 @app.route('/developer/user/add', methods=['POST'])
 @developer_required
 def dev_add_user():
-    username = request.form['username']
+    username = request.form['username'].lower()
     password = request.form['password']
     role = request.form['role']
     if User.query.filter_by(username=username).first():
@@ -779,10 +832,20 @@ def dev_edit_user(id):
     user = User.query.get_or_404(id)
     new_password = request.form.get('password')
     new_role = request.form.get('role')
+    full_name = request.form.get('full_name')
+    roll_number = request.form.get('roll_number')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    
     if new_password:
         user.password_hash = generate_password_hash(new_password)
     if new_role:
         user.role = new_role
+    
+    user.full_name = full_name
+    user.roll_number = roll_number
+    user.email = email
+    user.phone = phone
     db.session.commit()
     flash(f'User {user.username} updated.', 'success')
     return redirect(url_for('developer_dashboard'))

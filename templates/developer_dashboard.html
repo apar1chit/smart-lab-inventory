@@ -33,7 +33,10 @@
                         <tbody>
                             {% for user in users %}
                             <tr>
-                                <td class="px-4 fw-medium">{{ user.username }}</td>
+                                <td class="px-4 fw-medium">
+                                    {{ user.username }}
+                                    {% if user.full_name %}<div class="tiny text-muted fw-normal">{{ user.full_name }}</div>{% endif %}
+                                </td>
                                 <td>
                                     <span class="badge {% if user.role == 'developer' %}bg-primary{% elif user.role == 'teacher' %}bg-success{% else %}bg-secondary{% endif %}">
                                         {{ user.role|capitalize }}
@@ -187,16 +190,34 @@
             <form action="{{ url_for('dev_edit_user', id=user.id) }}" method="POST">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">NEW PASSWORD</label>
-                        <input type="password" name="password" class="form-control bg-light border-0" placeholder="Leave blank to keep same">
+                        <label class="form-label text-muted small fw-bold">FULL NAME</label>
+                        <input type="text" name="full_name" class="form-control bg-light border-0" value="{{ user.full_name or '' }}">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold">ROLL NO</label>
+                            <input type="text" name="roll_number" class="form-control bg-light border-0" value="{{ user.roll_number or '' }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold">ROLE</label>
+                            <select name="role" class="form-select bg-light border-0">
+                                <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
+                                <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Teacher</option>
+                                <option value="developer" {% if user.role == 'developer' %}selected{% endif %}>Developer</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">ROLE</label>
-                        <select name="role" class="form-select bg-light border-0">
-                            <option value="student" {% if user.role == 'student' %}selected{% endif %}>Student</option>
-                            <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Teacher</option>
-                            <option value="developer" {% if user.role == 'developer' %}selected{% endif %}>Developer</option>
-                        </select>
+                        <label class="form-label text-muted small fw-bold">EMAIL</label>
+                        <input type="email" name="email" class="form-control bg-light border-0" value="{{ user.email or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">PHONE</label>
+                        <input type="text" name="phone" class="form-control bg-light border-0" value="{{ user.phone or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">NEW PASSWORD</label>
+                        <input type="password" name="password" class="form-control bg-light border-0" placeholder="Leave blank to keep same">
                     </div>
                     <button type="submit" class="btn btn-primary w-100 fw-bold">Update User</button>
                 </div>
