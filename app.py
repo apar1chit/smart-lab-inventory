@@ -859,7 +859,7 @@ def dev_delete_user(id):
     else:
         db.session.delete(user)
         db.session.commit()
-        flash(f'User {user.username} deleted.', 'info')
+        flash(f'User {user.username} deleted.', 'success')
     return redirect(url_for('developer_dashboard'))
 
 @app.route('/developer/logs/reset', methods=['POST'])
