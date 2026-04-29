@@ -1,149 +1,598 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2 class="page-title">Dashboard</h2>
-
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase mb-1">Total Chemicals</h6>
-                    <div class="stat-value text-primary">{{ total_chemicals }}</div>
-                </div>
-                <div class="fs-1 text-primary opacity-50">
-                    <i class="bi bi-box-seam"></i>
-                </div>
-            </div>
-        </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <h2 class="page-title mb-0">Dashboard</h2>
+        <div class="ms-3 badge bg-primary-subtle text-primary rounded-pill px-3 py-2 small fw-bold">Live Data</div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card-danger p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase mb-1">Low Stock Alerts</h6>
-                    <div class="stat-value text-danger">{{ low_stock_chemicals|length }}</div>
-                </div>
-                <div class="fs-1 text-danger opacity-50">
-                    <i class="bi bi-exclamation-triangle"></i>
-                </div>
-            </div>
-        </div>
+    {% if current_user.is_authenticated and current_user.role in ['teacher', 'developer'] %}
+    <div class="d-flex gap-2">
+        <button id="resetLayoutBtn" class="btn btn-light shadow-sm d-none">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+        </button>
+        <button id="saveLayoutBtn" class="btn btn-primary d-none shadow-sm animate pulse">
+            <i class="bi bi-check-all me-2"></i>Save Configuration
+        </button>
+        <button id="editLayoutBtn" class="btn btn-outline-primary shadow-sm glass-btn">
+            <i class="bi bi-gear-fill me-2"></i>Customize
+        </button>
     </div>
-    <div class="col-md-4">
-        <div class="card p-4 border-start border-success border-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-muted text-uppercase mb-1">Recent Usage logs</h6>
-                    <div class="stat-value text-success">{{ recent_logs|length }}</div>
-                </div>
-                <div class="fs-1 text-success opacity-50">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% endif %}
 </div>
 
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-exclamation-circle text-danger me-2"></i>Low Stock Items</span>
-                <a href="{{ url_for('chemicals') }}" class="btn btn-sm btn-outline-secondary">View All</a>
-            </div>
-            <div class="card-body p-0">
-                {% if low_stock_chemicals %}
-                <ul class="list-group list-group-flush">
-                    {% for chem in low_stock_chemicals %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                        <div>
-                            <fw-bold>{{ chem.name }}</fw-bold> <small class="text-muted">({{ chem.formula }})</small>
-                        </div>
-                        <span class="badge bg-danger rounded-pill">{{ chem.quantity }} {{ chem.unit }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div class="p-4 text-center text-muted">
-                    <i class="bi bi-check-circle fs-3 d-block mb-2 text-success"></i>
-                    All chemicals are sufficiently stocked.
+<div id="dashboardGrid" class="row">
+    {% for config in dashboard_configs %}
+    {% if config.is_visible or current_user.role in ['teacher', 'developer'] %}
+    <div class="col-12 dashboard-card-wrapper mb-4 {% if config.card_id in ['stats_row', 'export_logs', 'announcements', 'quick_actions'] %}col-md-12{% else %}col-md-6{% endif %} {% if not config.is_visible %}opacity-50 grayscale d-none editing-only{% endif %}" data-id="{{ config.card_id }}">
+        
+        {% if config.card_id == 'announcements' %}
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-0">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-info-subtle me-2"><i class="bi bi-megaphone text-info"></i></div>
+                        Lab Announcements
+                    </h5>
+                    {% if current_user.role in ['teacher', 'developer'] %}
+                    <button class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#announcementForm">
+                        <i class="bi bi-plus-lg me-1"></i> New
+                    </button>
+                    {% endif %}
                 </div>
-                {% endif %}
+                <div class="card-body px-4 pb-4">
+                    {% if current_user.role in ['teacher', 'developer'] %}
+                    <div class="collapse mb-3" id="announcementForm">
+                        <form action="{{ url_for('add_announcement') }}" method="POST" class="bg-light p-3 rounded-4 border">
+                            <textarea name="content" class="form-control border-0 bg-transparent mb-2" rows="2" placeholder="What's happening in the lab?" required></textarea>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="is_safety" id="isSafety">
+                                    <label class="form-check-label small fw-bold text-danger" for="isSafety">Safety Alert</label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary px-4 rounded-pill">Post</button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    {% if announcements %}
+                        <div class="announcement-list">
+                            {% for ann in announcements %}
+                            <div class="announcement-item p-3 mb-2 rounded-4 {% if ann.is_safety %}bg-danger-subtle border-start border-danger border-4{% else %}bg-light{% endif %} position-relative">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small fw-bold text-muted">{{ ann.author|capitalize }} • {{ ann.date.strftime('%d %b, %H:%M') }}</span>
+                                    {% if ann.is_safety %}
+                                    <span class="badge bg-danger rounded-pill px-2" style="font-size: 0.6rem;">SAFETY</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-dark">{{ ann.content }}</div>
+                                {% if current_user.role in ['teacher', 'developer'] %}
+                                <form action="{{ url_for('delete_announcement', id=ann.id) }}" method="POST" class="position-absolute top-0 end-0 p-2">
+                                    <button type="submit" class="btn btn-link text-muted p-0"><i class="bi bi-x-circle"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No active announcements.</p>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-journal-text text-primary me-2"></i>Recent Usage</span>
+
+        {% elif config.card_id == 'quick_actions' %}
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-0">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-primary-subtle me-2"><i class="bi bi-lightning-charge text-primary"></i></div>
+                        Quick Actions Hub
+                    </h5>
+                </div>
+                <div class="card-body p-4 pt-2">
+                    <div class="row g-3">
+                        <div class="col-md-3 col-6 text-center">
+                            <a href="{{ url_for('chemicals') }}" class="action-tile d-block p-3 rounded-4 text-decoration-none">
+                                <div class="action-icon bg-primary-subtle text-primary mb-2 mx-auto"><i class="bi bi-search"></i></div>
+                                <span class="small fw-bold text-dark d-block">Log Usage</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 text-center">
+                            <a href="{{ url_for('glassware') }}" class="action-tile d-block p-3 rounded-4 text-decoration-none">
+                                <div class="action-icon bg-success-subtle text-success mb-2 mx-auto"><i class="bi bi-arrow-return-left"></i></div>
+                                <span class="small fw-bold text-dark d-block">Return Gear</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 text-center">
+                            <a href="{{ url_for('add_chemical') }}" class="action-tile d-block p-3 rounded-4 text-decoration-none">
+                                <div class="action-icon bg-warning-subtle text-warning mb-2 mx-auto"><i class="bi bi-plus-circle"></i></div>
+                                <span class="small fw-bold text-dark d-block">Add Stock</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-6 text-center">
+                            <a href="{{ url_for('equipment') }}" class="action-tile d-block p-3 rounded-4 text-decoration-none">
+                                <div class="icon-box-sm bg-info-subtle text-info mb-2 mx-auto" style="width: 50px; height: 50px; border-radius: 15px; font-size: 1.5rem;"><i class="bi bi-activity"></i></div>
+                                <span class="small fw-bold text-dark d-block">Equip Status</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
-                {% if recent_logs %}
-                <ul class="list-group list-group-flush">
-                    {% for log in recent_logs %}
-                    <li class="list-group-item p-3">
-                        <div class="d-flex w-100 justify-content-between align-items-center">
-                            <h6 class="mb-1 fw-bold">{{ log.chemical.name }}</h6>
-                            <span class="badge {% if log.action == 'Usage' %}bg-primary{% elif log.action == 'Restock' %}bg-success{% else %}bg-warning text-dark{% endif %} px-2">
-                                {{ log.action }}
+
+        {% elif config.card_id == 'stats_row' %}
+            <!-- Stats Row -->
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="card stat-card p-4 h-100 border-0 shadow-lg rounded-4 overflow-hidden">
+                        <div class="card-glow"></div>
+                        <div class="d-flex justify-content-between align-items-center position-relative">
+                            <div>
+                                <h6 class="text-muted text-uppercase small fw-bold mb-1">Total Chemicals</h6>
+                                <div class="stat-value text-primary fs-2 fw-bold">{{ total_chemicals }}</div>
+                            </div>
+                            <div class="fs-1 text-primary opacity-25"><i class="bi bi-box-seam"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="card stat-card-danger p-4 h-100 border-0 shadow-lg rounded-4 overflow-hidden">
+                        <div class="card-glow"></div>
+                        <div class="d-flex justify-content-between align-items-center position-relative">
+                            <div>
+                                <h6 class="text-muted text-uppercase small fw-bold mb-1">Low Stock</h6>
+                                <div class="stat-value text-danger fs-2 fw-bold">{{ low_stock_chemicals|length }}</div>
+                            </div>
+                            <div class="fs-1 text-danger opacity-25"><i class="bi bi-exclamation-triangle"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-4 border-0 h-100 shadow-lg rounded-4 overflow-hidden bg-white">
+                        <div class="border-gradient-left"></div>
+                        <div class="d-flex justify-content-between align-items-center position-relative">
+                            <div>
+                                <h6 class="text-muted text-uppercase small fw-bold mb-1">Expiring Soon</h6>
+                                <div class="stat-value text-success fs-2 fw-bold">{{ expiring_soon|length }}</div>
+                            </div>
+                            <div class="fs-1 text-success opacity-25"><i class="bi bi-calendar-range"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {% elif config.card_id == 'consumption_chart' %}
+            <div class="card h-100 shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-primary-subtle me-2"><i class="bi bi-graph-up text-primary"></i></div>
+                        Monthly Consumption
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                        <ul class="dropdown-menu shadow-lg border-0">
+                            <li><a class="dropdown-item small" href="#"><i class="bi bi-download me-2"></i>Download Chart</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div style="height: 250px;">
+                        <canvas id="consumptionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        {% elif config.card_id == 'equipment_utilization' %}
+            <div class="card h-100 shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-success-subtle me-2"><i class="bi bi-pie-chart text-success"></i></div>
+                        Equipment Utilization
+                    </h5>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center pb-4">
+                    <div style="width: 220px; height: 220px;">
+                        <canvas id="equipChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        {% elif config.card_id == 'low_stock' %}
+            <div class="card h-100 shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-danger-subtle me-2"><i class="bi bi-exclamation-circle text-danger"></i></div>
+                        Low Stock Items
+                    </h5>
+                    <a href="{{ url_for('chemicals') }}" class="btn btn-sm btn-light rounded-pill px-3 fw-bold">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if low_stock_chemicals %}
+                    <ul class="list-group list-group-flush list-custom">
+                        {% for chem in low_stock_chemicals[:5] %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-0 border-bottom mx-2">
+                            <div class="d-flex align-items-center">
+                                <div class="item-dot bg-danger me-3"></div>
+                                <div>
+                                    <div class="fw-bold">{{ chem.name }}</div>
+                                    <small class="text-muted">{{ chem.formula }}</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3">{{ chem.quantity }} {{ chem.unit }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">
+                        <div class="empty-state-icon bg-success-subtle text-success mx-auto mb-3">
+                            <i class="bi bi-shield-check fs-2"></i>
+                        </div>
+                        All chemicals sufficiently stocked.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% elif config.card_id == 'recent_usage' %}
+            <div class="card h-100 shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom pt-4 px-4">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-primary-subtle me-2"><i class="bi bi-journal-text text-primary"></i></div>
+                        Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_logs %}
+                    <ul class="list-group list-group-flush list-custom">
+                        {% for log in recent_logs %}
+                        <li class="list-group-item p-3 border-0 border-bottom mx-2">
+                            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0 fw-bold text-dark">{{ log.chemical.name }}</h6>
+                                <span class="badge {% if log.action == 'Usage' %}bg-primary-subtle text-primary{% elif log.action == 'Restock' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-dark{% endif %} rounded-pill px-2">
+                                    {{ log.action }}
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="{% if log.quantity_change < 0 %}text-danger{% else %}text-success{% endif %} small fw-bold">
+                                    {% if log.quantity_change > 0 %}+{% endif %}{{ log.quantity_change }} {{ log.chemical.unit }}
+                                </span> 
+                                <small class="text-muted fw-medium">{{ log.user_name }} • {{ log.date.strftime('%d %b') }}</small>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">No recent activity logged.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% elif config.card_id == 'expiring_soon' %}
+            <div class="card h-100 shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-warning text-dark pt-4 px-4 border-0 d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="mb-0 fw-bold d-flex align-items-center"><i class="bi bi-clock-history me-2"></i>Expiry Radar</h5>
+                        <small class="opacity-75">Chemicals reaching shelf life soon</small>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if expiring_soon %}
+                    <ul class="list-group list-group-flush list-custom">
+                        {% for chem in expiring_soon %}
+                        <li class="list-group-item p-3 d-flex justify-content-between align-items-center border-0 border-bottom mx-2">
+                            <div class="d-flex align-items-center">
+                                <div class="item-dot bg-warning me-3"></div>
+                                <div>
+                                    <div class="fw-bold">{{ chem.name }}</div>
+                                    <small class="text-muted">Exp: {{ chem.expiry_date.strftime('%d %b %Y') }}</small>
+                                </div>
+                            </div>
+                            {% set days_left = (chem.expiry_date - now_date).days %}
+                            <span class="badge {% if days_left < 7 %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 shadow-sm">
+                                {{ days_left }}d left
                             </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">No chemicals expiring soon.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% elif config.card_id == 'most_used' %}
+            <div class="card h-100 shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white pt-4 px-4 border-0">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center"><i class="bi bi-fire me-2"></i>Most Used Items</h5>
+                    <small class="opacity-75">Based on sessions in last 30 days</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if most_used_chems %}
+                    <ul class="list-group list-group-flush list-custom">
+                        {% for chem, count in most_used_chems %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center p-3 border-0 border-bottom mx-2">
+                            <div class="fw-bold text-dark d-flex align-items-center">
+                                <span class="text-primary me-2">#{{ loop.index }}</span> {{ chem }}
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 fw-bold">{{ count }} usages</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-5 text-center text-muted">Insufficient data for usage analysis.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% elif config.card_id == 'export_logs' %}
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-dark text-white p-4">
+                    <h5 class="mb-0 fw-bold d-flex align-items-center">
+                        <div class="icon-box-sm bg-white-subtle me-2"><i class="bi bi-file-earmark-spreadsheet text-white"></i></div>
+                        Export Inventory Logs
+                    </h5>
+                </div>
+                <div class="card-body p-4 bg-light-subtle">
+                    <form action="{{ url_for('export_logs') }}" method="POST" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">CATEGORY</label>
+                            <select name="log_type" class="form-select border-0 shadow-sm rounded-3 py-2" required>
+                                <option value="chemicals">Chemicals</option>
+                                <option value="glassware">Glassware</option>
+                                <option value="equipment">Equipment</option>
+                            </select>
                         </div>
-                        <p class="mb-1 text-muted small">
-                            <span class="{% if log.quantity_change < 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
-                                {% if log.quantity_change > 0 %}+{% endif %}{{ log.quantity_change }} {{ log.chemical.unit }}
-                            </span> 
-                            by {{ log.user_name }} • <span class="text-muted">{{ log.date.strftime('%d %b') }}</span>
-                        </p>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div class="p-4 text-center text-muted">
-                    No recent usage logged.
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% if current_user.is_authenticated and current_user.role in ['teacher', 'developer'] %}
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-            <div class="card-header bg-dark text-white p-3">
-                <h5 class="mb-0"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Export Inventory Logs</h5>
-            </div>
-            <div class="card-body p-4">
-                <form action="{{ url_for('export_logs') }}" method="POST" class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-medium">Log Category</label>
-                        <select name="log_type" class="form-select" required>
-                            <option value="chemicals">Chemicals Usage</option>
-                            <option value="glassware">Glassware History</option>
-                            <option value="equipment">Equipment Usage</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-medium">Start Date</label>
-                        <input type="date" name="start_date" class="form-control" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-medium">End Date</label>
-                        <input type="date" name="end_date" class="form-control" required>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-success w-100 shadow-sm">
-                            <i class="bi bi-download me-2"></i>Export to CSV (Excel)
-                        </button>
-                    </div>
-                </form>
-                <div class="mt-3 text-muted small">
-                    <i class="bi bi-info-circle me-1"></i> Data will be exported in CSV format, which can be opened in Microsoft Excel, Google Sheets, or any PDF converter.
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">START DATE</label>
+                            <input type="date" name="start_date" class="form-control border-0 shadow-sm rounded-3 py-2" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold small text-muted">END DATE</label>
+                            <input type="date" name="end_date" class="form-control border-0 shadow-sm rounded-3 py-2" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100 shadow-lg py-2 fw-bold">
+                                <i class="bi bi-download me-2"></i>Download Report
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
+        {% endif %}
+
+        {% if current_user.role in ['teacher', 'developer'] %}
+        <div class="card-edit-overlay d-none">
+            <button class="btn-toggle-visibility btn {% if config.is_visible %}btn-success{% else %}btn-secondary opacity-50{% endif %} rounded-pill shadow-sm py-1 px-3" data-card="{{ config.card_id }}">
+                <i class="bi {% if config.is_visible %}bi-eye-fill{% else %}bi-eye-slash-fill{% endif %} me-1"></i> 
+                <span>{% if config.is_visible %}Visible{% else %}Hidden{% endif %}</span>
+            </button>
+            <div class="drag-handle bg-dark text-white rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; cursor: grab;">
+                <i class="bi bi-grid-3x3-gap-fill"></i>
+            </div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
+    {% endfor %}
 </div>
-{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Consumption Chart with Gradients
+    const ctxConsumption = document.getElementById('consumptionChart')?.getContext('2d');
+    if (ctxConsumption) {
+        const gradient = ctxConsumption.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+        new Chart(ctxConsumption, {
+            type: 'line',
+            data: {
+                labels: {{ chart_labels|tojson }},
+                datasets: [{
+                    label: 'Units Consumed',
+                    data: {{ chart_values|tojson }},
+                    borderColor: '#6366f1',
+                    borderWidth: 3,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#6366f1',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#2b3674',
+                        titleFont: { weight: 'bold' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: false
+                    }
+                },
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6', drawBorder: false },
+                        ticks: { font: { weight: 'bold' }, color: '#a3aed1' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { weight: 'bold' }, color: '#a3aed1' }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Equipment Utilization Chart
+    const ctxEquip = document.getElementById('equipChart')?.getContext('2d');
+    if (ctxEquip) {
+        const utilData = {{ equip_utilization|tojson }};
+        new Chart(ctxEquip, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(utilData),
+                datasets: [{
+                    data: Object.values(utilData),
+                    backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#6366f1'],
+                    hoverBackgroundColor: ['#059669', '#dc2626', '#d97706', '#4f46e5'],
+                    borderWidth: 5,
+                    borderColor: '#fff',
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: { 
+                    legend: { 
+                        position: 'bottom',
+                        labels: { 
+                            usePointStyle: true,
+                            padding: 25,
+                            font: { size: 12, weight: 'bold', family: 'Inter' },
+                            color: '#2b3674'
+                        }
+                    },
+                    tooltip: {
+                        padding: 12,
+                        cornerRadius: 10,
+                        backgroundColor: '#2b3674'
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Dynamic Layout Controls
+    const editBtn = document.getElementById('editLayoutBtn');
+    const saveBtn = document.getElementById('saveLayoutBtn');
+    const resetBtn = document.getElementById('resetLayoutBtn');
+    const grid = document.getElementById('dashboardGrid');
+    let sortable;
+
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            const isEditing = editBtn.classList.contains('active');
+            
+            if (!isEditing) {
+                editBtn.classList.add('active', 'btn-primary', 'text-white');
+                editBtn.innerHTML = '<i class="bi bi-x-lg me-2"></i>Exit';
+                saveBtn.classList.remove('d-none');
+                resetBtn.classList.remove('d-none');
+                
+                document.querySelectorAll('.card-edit-overlay').forEach(el => el.classList.remove('d-none'));
+                document.querySelectorAll('.editing-only').forEach(el => el.classList.remove('d-none'));
+                
+                sortable = Sortable.create(grid, {
+                    animation: 250,
+                    handle: '.drag-handle',
+                    ghostClass: 'dashboard-ghost',
+                    onEnd: () => {
+                        saveBtn.classList.add('pulse');
+                    },
+                });
+            } else {
+                location.reload();
+            }
+        });
+    }
+
+    // Toggle Visibility Logic
+    document.querySelectorAll('.btn-toggle-visibility').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            const text = this.querySelector('span');
+            const wrapper = this.closest('.dashboard-card-wrapper');
+            
+            if (this.classList.contains('btn-success')) {
+                // Hide it
+                this.classList.remove('btn-success');
+                this.classList.add('btn-secondary', 'opacity-50');
+                icon.classList.replace('bi-eye-fill', 'bi-eye-slash-fill');
+                text.innerText = 'Hidden';
+                wrapper.classList.add('grayscale', 'opacity-50');
+            } else {
+                // Show it
+                this.classList.add('btn-success');
+                this.classList.remove('btn-secondary', 'opacity-50');
+                icon.classList.replace('bi-eye-slash-fill', 'bi-eye-fill');
+                text.innerText = 'Visible';
+                wrapper.classList.remove('grayscale', 'opacity-50');
+            }
+        });
+    });
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const configs = [];
+            document.querySelectorAll('.dashboard-card-wrapper').forEach(wrapper => {
+                const isVisible = wrapper.querySelector('.btn-toggle-visibility').classList.contains('btn-success');
+                configs.push({
+                    card_id: wrapper.dataset.id,
+                    is_visible: isVisible
+                });
+            });
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+            fetch('/api/dashboard/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ configs: configs })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                    saveBtn.disabled = false;
+                }
+            });
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm('Reset dashboard to default layout?')) {
+                fetch('/api/dashboard/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ configs: [] }) // Empty sends back to default logic
+                }).then(() => location.reload());
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.icon-box-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bg-white-subtle { background: rgba(255,255,255,0.1); }
+.list-custom .list-group-item { transition: all 0.2s ease; cursor: pointer; }
+.list-custom .list-group-item:hover { background-color: #f8fafc !important; transform: translateX(5px); }
+.item-dot { width: 8px; height: 8px; border-radius: 50%; }
+.empty-state-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.card-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(67, 97, 238, 0.05) 0%, transparent 70%); pointer-events: none; }
+.border-gradient-left { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: linear-gradient(180deg, #10b981, #3b82f6); }
+.glass-btn { backdrop-filter: blur(5px); background: rgba(255,255,255,0.8); }
+.dashboard-ghost { opacity: 0.2 !important; border: 3px dashed #6366f1 !important; transform: scale(0.98) !important; background: #e0e7ff !important; }
+</style>
 {% endblock %}

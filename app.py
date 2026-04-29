@@ -8,9 +8,9 @@ from functools import wraps
 from lab_images import get_lab_item_image
 import csv
 import io
-from flask import Response
-from datetime import datetime
-
+from flask import Response, jsonify
+from datetime import datetime, timedelta
+from sqlalchemy import func
 app = Flask(__name__)
 # Production Config: Use environment variables if available
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key-12345')
@@ -82,6 +82,20 @@ class EquipmentLog(db.Model):
     purpose = db.Column(db.String(255), nullable=False)
     date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+class DashboardConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(50), nullable=False) # 'teacher', 'student', 'developer'
+    card_id = db.Column(db.String(100), nullable=False)
+    is_visible = db.Column(db.Boolean, default=True)
+    position = db.Column(db.Integer, nullable=False)
+
+class Announcement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    author = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    is_safety = db.Column(db.Boolean, default=False)
+
 # Create tables within application context
 with app.app_context():
     db.create_all()
@@ -151,14 +165,120 @@ def logout():
 @app.route('/')
 def dashboard():
     total_chemicals = Chemical.query.count()
-    # Define "low stock" as quantity < 50 (standard threshold for demo)
     low_stock_chemicals = Chemical.query.filter(Chemical.quantity < 50).all()
-    # Get the latest 5 usage logs
     recent_logs = UsageLog.query.order_by(UsageLog.date.desc()).limit(5).all()
+
+    # --- New Analytical Data ---
+
+    # 1. Upcoming Expiries (next 30 days)
+    thirty_days_from_now = datetime.utcnow().date() + timedelta(days=30)
+    expiring_soon = Chemical.query.filter(
+        Chemical.expiry_date.between(datetime.utcnow().date(), thirty_days_from_now)
+    ).order_by(Chemical.expiry_date.asc()).all()
+
+    # 2. Equipment Utilization
+    equip_stats = db.session.query(Equipment.status, func.count(Equipment.id)).group_by(Equipment.status).all()
+    equip_utilization = {status: count for status, count in equip_stats}
+
+    # 3. Most Used Items (Chemicals) - Top 5 by number of logs in last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    most_used_chems = db.session.query(
+        Chemical.name, func.count(UsageLog.id).label('usage_count')
+    ).join(UsageLog).filter(UsageLog.date >= thirty_days_ago).group_by(Chemical.name).order_by(func.count(UsageLog.id).desc()).limit(5).all()
+
+    # 4. Monthly Consumption (Combined Stock Change) - Last 6 months
+    consumption_data = db.session.query(
+        func.strftime('%Y-%m', UsageLog.date).label('month'),
+        func.abs(func.sum(UsageLog.quantity_change)).label('total_consumption')
+    ).filter(UsageLog.quantity_change < 0).group_by('month').order_by('month').limit(6).all()
+    
+    chart_labels = [d[0] for d in consumption_data]
+    chart_values = [float(d[1]) for d in consumption_data]
+
+    # 5. Dashboard Configuration
+    role = current_user.role if current_user.is_authenticated else 'student'
+    all_possible_cards = [
+        'announcements', 'quick_actions', 'stats_row', 'consumption_chart', 
+        'equipment_utilization', 'low_stock', 'recent_usage', 'expiring_soon', 'most_used'
+    ]
+    if role in ['teacher', 'developer']:
+        all_possible_cards.append('export_logs')
+    
+    configs = DashboardConfig.query.filter_by(role=role).order_by(DashboardConfig.position).all()
+    existing_card_ids = [c.card_id for c in configs]
+    
+    # Sync missing cards (especially if new features are added)
+    missing_cards = [cid for cid in all_possible_cards if cid not in existing_card_ids]
+    if missing_cards:
+        max_pos = max([c.position for c in configs]) if configs else 0
+        for i, card_id in enumerate(missing_cards):
+            new_conf = DashboardConfig(role=role, card_id=card_id, position=max_pos + i + 1, is_visible=True)
+            db.session.add(new_conf)
+        db.session.commit()
+        configs = DashboardConfig.query.filter_by(role=role).order_by(DashboardConfig.position).all()
+
     return render_template('dashboard.html', 
                            total_chemicals=total_chemicals, 
                            low_stock_chemicals=low_stock_chemicals,
-                           recent_logs=recent_logs)
+                           recent_logs=recent_logs,
+                           expiring_soon=expiring_soon,
+                           equip_utilization=equip_utilization,
+                           most_used_chems=most_used_chems,
+                           chart_labels=chart_labels,
+                           chart_values=chart_values,
+                           dashboard_configs=configs,
+                           now_date=datetime.utcnow().date(),
+                           announcements=Announcement.query.order_by(Announcement.date.desc()).limit(3).all())
+
+@app.route('/announcement/add', methods=['POST'])
+@teacher_required
+def add_announcement():
+    content = request.form.get('content')
+    is_safety = 'is_safety' in request.form
+    if content:
+        new_ann = Announcement(content=content, author=current_user.username, is_safety=is_safety)
+        db.session.add(new_ann)
+        db.session.commit()
+        flash('Announcement posted!', 'success')
+    return redirect(url_for('dashboard'))
+
+@app.route('/announcement/<int:id>/delete', methods=['POST'])
+@teacher_required
+def delete_announcement(id):
+    ann = Announcement.query.get_or_404(id)
+    db.session.delete(ann)
+    db.session.commit()
+    flash('Announcement removed.', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/api/dashboard/config', methods=['POST'])
+@login_required
+def save_dashboard_config():
+    if current_user.role not in ['teacher', 'developer']:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.json
+    role_to_edit = data.get('role', current_user.role)
+    new_configs = data.get('configs', [])
+
+    try:
+        # Clear existing configs for this role
+        DashboardConfig.query.filter_by(role=role_to_edit).delete()
+        
+        for i, conf in enumerate(new_configs):
+            new_conf = DashboardConfig(
+                role=role_to_edit,
+                card_id=conf['card_id'],
+                is_visible=conf['is_visible'],
+                position=i
+            )
+            db.session.add(new_conf)
+        
+        db.session.commit()
+        return jsonify({'message': 'Configuration saved successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/chemicals')
 def chemicals():
@@ -698,9 +818,6 @@ def dev_delete_log(type, id):
     flash('Log entry deleted.', 'info')
     return redirect(url_for('developer_dashboard'))
 
-@app.route('/.well-known/assetlinks.json')
-def assetlinks():
-    return app.send_static_file('.well-known/assetlinks.json')
 
 if __name__ == '__main__':
     with app.app_context():
