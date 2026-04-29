@@ -20,6 +20,7 @@
         (function () {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
         })();
     </script>
 </head>
@@ -96,8 +97,8 @@
                         <div class="profile-trigger d-flex align-items-center" {% if current_user.is_authenticated %}data-bs-toggle="dropdown"{% else %}data-bs-toggle="modal" data-bs-target="#loginModal"{% endif %}>
                             {% if current_user.is_authenticated %}
                             <div class="avatar-wrapper me-2">
-                                <div class="avatar-circle {% if current_user.role == 'developer' %}bg-developer{% elif current_user.role == 'teacher' %}bg-teacher{% else %}bg-student{% endif %} shadow-sm">
-                                    {{ current_user.username[0]|upper }}
+                                <div class="avatar-circle {% if current_user.role == 'developer' %}bg-developer{% elif current_user.role == 'teacher' %}bg-teacher{% else %}bg-student{% endif %} shadow-sm" style="padding: 0; overflow: hidden;">
+                                    <img src="https://api.dicebear.com/9.x/bottts/svg?seed={{ current_user.username }}&backgroundColor=transparent" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; transform: scale(1.1) translateY(2px);">
                                 </div>
                                 <div class="status-indicator online"></div>
                             </div>
@@ -272,6 +273,7 @@
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
                 document.documentElement.setAttribute('data-theme', newTheme);
+                document.documentElement.setAttribute('data-bs-theme', newTheme);
                 localStorage.setItem('theme', newTheme);
             });
         }

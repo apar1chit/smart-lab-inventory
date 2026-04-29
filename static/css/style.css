@@ -580,6 +580,11 @@ body::before {
     }
 }
 
+.bg-warning {
+    --bs-bg-opacity: 1;
+    background-color: rgb(7 178 255) !important;
+}
+
 /* Theme Overrides for Bootstrap Classes */
 [data-theme="dark"] .bg-white {
     background-color: var(--card-bg) !important;
