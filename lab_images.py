@@ -1,5 +1,6 @@
 import requests
 import urllib.parse
+from functools import lru_cache
 
 # Curated File Names on Wikimedia Commons for 100% accuracy on standard items
 STANDARD_FILES = {
@@ -22,7 +23,8 @@ STANDARD_FILES = {
 # The absolute final fallback if even the dynamic search fails
 FALLBACK_ICON = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0YTU1NjgiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOSAzdjhoNi02LTZ6TTUgMjFsNy0xMiA3IDEyaC0xNHoiLz48L3N2Zz4="
 
-def get_wikimedia_url(file_title, width=400):
+@lru_cache(maxsize=128)
+def get_wikimedia_url(file_title, width=150):
     """
     Fetches the direct thumbnail URL for a Wikimedia File title at a specific width.
     This significantly boosts page loading speed by reducing resolution.
@@ -48,7 +50,8 @@ def get_wikimedia_url(file_title, width=400):
         pass
     return None
 
-def search_wikimedia_dynamic(name, suffix="", width=400):
+@lru_cache(maxsize=128)
+def search_wikimedia_dynamic(name, suffix="", width=150):
     """Performs a dynamic search on Wikimedia Commons and returns an optimized thumbnail."""
     try:
         search_query = f"{name}{suffix}"
@@ -72,7 +75,8 @@ def search_wikimedia_dynamic(name, suffix="", width=400):
         pass
     return None
 
-def get_lab_item_image(name, suffix=" laboratory", width=400):
+@lru_cache(maxsize=128)
+def get_lab_item_image(name, suffix=" laboratory", width=150):
     """
     Finds a direct, high-quality, and OPTIMIZED image URL for a lab item.
     Uses a multi-stage approach for maximum robustness.

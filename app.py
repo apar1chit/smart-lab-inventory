@@ -219,7 +219,7 @@ def update_profile():
 def dashboard():
     total_chemicals = Chemical.query.count()
     low_stock_chemicals = Chemical.query.filter(Chemical.quantity < 50).all()
-    recent_logs = UsageLog.query.order_by(UsageLog.date.desc()).limit(5).all()
+    recent_logs = UsageLog.query.order_by(UsageLog.date.desc()).limit(30).all()
 
     # --- New Analytical Data ---
 
@@ -503,30 +503,37 @@ def edit_chemical(id):
 def add_stock(id):
     chemical = Chemical.query.get_or_404(id)
     try:
-        added_quantity = float(request.form['added_quantity'])
-        if added_quantity <= 0:
-            flash('Added quantity must be greater than zero.', 'warning')
+        adjustment = float(request.form['added_quantity'])
+        if chemical.quantity + adjustment < 0:
+            flash('Cannot reduce stock below zero.', 'danger')
+        elif adjustment == 0:
+            flash('No adjustment made.', 'info')
         else:
-            # Atomic update for restock
+            # Atomic update for adjustment
             db.session.query(Chemical).filter(Chemical.id == id).update(
-                {"quantity": Chemical.quantity + added_quantity}, 
+                {"quantity": Chemical.quantity + adjustment}, 
                 synchronize_session='fetch'
             )
             
-            # Create restock log
+            action_type = 'Restock' if adjustment > 0 else 'Reduction'
+            
+            # Create restock/reduction log
             restock_log = UsageLog(
                 chemical_id=id,
                 user_name=current_user.username.lower(),
-                action='Restock',
-                quantity_change=added_quantity,
-                purpose='Manual Restock'
+                action=action_type,
+                quantity_change=adjustment,
+                purpose=request.form.get('purpose', f'Manual Stock {action_type}')
             )
             db.session.add(restock_log)
             db.session.commit()
-            flash(f'Successfully added {added_quantity} {chemical.unit} to stock.', 'success')
+            flash(f'Stock updated successfully. ({"+" if adjustment > 0 else ""}{adjustment} {chemical.unit})', 'success')
+    except ValueError:
+        flash('Invalid quantity entered.', 'danger')
     except Exception as e:
-        flash(f'Error adding stock: {str(e)}', 'danger')
+        flash(f'An error occurred: {str(e)}', 'danger')
         db.session.rollback()
+        
     return redirect(url_for('chemical_detail', id=id))
 
 

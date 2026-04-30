@@ -10,7 +10,7 @@
             {{ chemical.name }}
             {% if current_user.is_authenticated and current_user.role in ['teacher', 'developer'] %}
             <button class="btn btn-sm btn-outline-success ms-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addStockModal">
-                <i class="bi bi-plus-circle me-1"></i> Add Stock
+                <i class="bi bi-arrow-left-right me-1"></i> Update Stock
             </button>
             <button class="btn btn-sm btn-outline-primary ms-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#editChemicalModal">
                 <i class="bi bi-pencil me-1"></i> Edit
@@ -190,19 +190,24 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header border-bottom-0">
-        <h5 class="modal-title">Add Stock for {{ chemical.name }}</h5>
+        <h5 class="modal-title">Update Stock for {{ chemical.name }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form action="{{ url_for('add_stock', id=chemical.id) }}" method="POST">
           <div class="modal-body">
               <div class="mb-3">
-                  <label class="form-label fw-medium">Quantity to Add ({{ chemical.unit }})</label>
-                  <input type="number" step="0.01" min="0.01" name="added_quantity" class="form-control" required>
+                  <label class="form-label fw-medium">Quantity Adjustment ({{ chemical.unit }})</label>
+                  <div class="form-text mb-2 text-muted">Use a positive number to add stock, or a negative number to reduce stock.</div>
+                  <input type="number" step="0.01" name="added_quantity" class="form-control" placeholder="e.g. 50 or -20" required>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label fw-medium">Reason for Adjustment (Optional)</label>
+                  <input type="text" name="purpose" class="form-control" placeholder="e.g. Audit correction, Spill, Restock">
               </div>
           </div>
           <div class="modal-footer border-top-0">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-success">Add to Inventory</button>
+            <button type="submit" class="btn btn-primary">Update Inventory</button>
           </div>
       </form>
     </div>
@@ -229,6 +234,10 @@
               <div class="mb-3">
                   <label class="form-label fw-medium">Location</label>
                   <input type="text" name="location" class="form-control" value="{{ chemical.location }}" required>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label fw-medium">Expiry Date (Optional)</label>
+                  <input type="date" name="expiry_date" class="form-control" value="{{ chemical.expiry_date.strftime('%Y-%m-%d') if chemical.expiry_date else '' }}">
               </div>
                   <div class="mb-3">
                       <label class="form-label fw-medium">Unit of Measurement</label>

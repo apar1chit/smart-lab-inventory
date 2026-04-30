@@ -75,16 +75,16 @@ body {
 
 .logo-text-container {
     position: relative;
-    height: 28px;
+    height: 60px;
     overflow: hidden;
-    width: 140px;
+    width: 220px;
     margin-left: 2px;
 }
 
 .logo-text {
-    display: block;
+    display: flex;
+    align-items: center;
     height: 100%;
-    line-height: 28px;
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     white-space: nowrap;
 }
@@ -765,6 +765,7 @@ body::before {
 [data-theme="dark"] .theme-toggle .bi-moon-stars-fill {
     display: none;
 }
+
 /* --- Dashboard Enhancements (Premium) --- */
 .dashboard-card-wrapper {
     position: relative;
@@ -810,14 +811,32 @@ body::before {
 
 /* Animations */
 @keyframes pulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
-    70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .animate.pulse {
@@ -856,12 +875,455 @@ body::before {
 
 
 /* --- Announcement & Quick Action Styles --- */
-.announcement-item { transition: transform 0.2s ease; }
-.announcement-item:hover { transform: scale(1.01); }
-.action-tile { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; }
-.action-tile:hover { transform: translateY(-8px) scale(1.05) !important; box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important; background-color: var(--soft-bg); }
-.action-icon { width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: transform 0.3s ease; }
-.action-tile:hover .action-icon { transform: rotate(10deg); }
+.announcement-item {
+    transition: transform 0.2s ease;
+}
 
-.action-tile { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.action-tile:hover { background-color: var(--soft-bg); transform: scale(1.05); }
+.announcement-item:hover {
+    transform: scale(1.01);
+}
+
+.action-tile {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+}
+
+.action-tile:hover {
+    transform: translateY(-8px) scale(1.05) !important;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+    background-color: var(--soft-bg);
+}
+
+.action-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+[data-theme="dark"] .sidebar-nav .nav-link {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .sidebar-nav .nav-link:hover {
+    background-color: var(--input-bg);
+    color: var(--primary-blue);
+}
+
+[data-theme="dark"] .sidebar-nav .nav-link.active {
+    background-color: var(--input-bg);
+    color: var(--primary-blue);
+}
+
+/* Fix for invisible text in dark mode */
+[data-theme="dark"] .form-label,
+[data-theme="dark"] label {
+    color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.6;
+}
+
+[data-theme="dark"] .text-muted {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .card-header.bg-white {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .bg-light {
+    background-color: var(--input-bg) !important;
+}
+
+[data-theme="dark"] .text-dark {
+    color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .input-group-text {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .bi-search {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] input::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.7;
+}
+
+/* Theme Toggle Button Styles */
+.theme-toggle {
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text-main);
+    background-color: var(--soft-bg);
+    margin-right: 15px;
+}
+
+.theme-toggle:hover {
+    transform: rotate(45deg) scale(1.1);
+    background-color: var(--secondary-color);
+}
+
+.theme-toggle .bi-sun-fill {
+    display: none;
+}
+
+.theme-toggle .bi-moon-stars-fill {
+    display: block;
+}
+
+[data-theme="dark"] .theme-toggle .bi-sun-fill {
+    display: block;
+}
+
+[data-theme="dark"] .theme-toggle .bi-moon-stars-fill {
+    display: none;
+}
+
+/* --- Dashboard Enhancements (Premium) --- */
+.dashboard-card-wrapper {
+    position: relative;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease, filter 0.4s ease;
+}
+
+.card-edit-overlay {
+    position: absolute;
+    top: 15px;
+    right: 30px;
+    z-index: 1000;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.drag-handle {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.drag-handle:hover {
+    transform: scale(1.1) rotate(5deg);
+    background-color: var(--primary-blue) !important;
+}
+
+.dashboard-ghost {
+    opacity: 0.1 !important;
+    border: 3px dashed var(--primary-blue) !important;
+    transform: scale(0.95);
+    background: var(--secondary-color) !important;
+}
+
+.grayscale {
+    filter: grayscale(0.8) contrast(0.8) opacity(0.4);
+}
+
+.editing-only {
+    border: 2px dashed var(--primary-blue) !important;
+    border-radius: var(--border-radius);
+    background-color: rgba(67, 97, 238, 0.02) !important;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(67, 97, 238, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(67, 97, 238, 0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Stat Card Inner Glow */
+.card-glow {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+    transition: all 0.5s ease;
+}
+
+.card:hover .card-glow {
+    transform: translate(10%, 10%);
+}
+
+[data-theme="dark"] .card-glow {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+}
+
+.icon-box-sm {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+
+/* --- Announcement & Quick Action Styles --- */
+.announcement-item {
+    transition: transform 0.2s ease;
+}
+
+.announcement-item:hover {
+    transform: scale(1.01);
+}
+
+.action-tile {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+}
+
+.action-tile:hover {
+    transform: translateY(-8px) scale(1.05) !important;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+    background-color: var(--soft-bg);
+}
+
+.action-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.action-tile:hover .action-icon {
+    transform: rotate(10deg);
+}
+
+.action-tile {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.action-tile:hover {
+    background-color: var(--soft-bg);
+    transform: scale(1.05);
+}
+
+/* Premium Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+/* Dark Mode Scrollbar */
+[data-theme='dark'] .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+[data-theme='dark'] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+
+/* Powered By Logo Animation */
+@keyframes float-subtle {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.powered-logo {
+    max-height: 65px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    animation: float-subtle 4s ease-in-out infinite;
+    transform-origin: left center;
+}
+
+.powered-logo:hover {
+    opacity: 1;
+    animation-play-state: paused;
+    transform: scale(1.05);
+}
+
+/* Special Dark Mode Treatment for Powered Logo */
+[data-theme="dark"] .powered-logo {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 240, 0.85));
+    padding: 8px 16px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.15), inset 0 2px 5px rgba(255, 255, 255, 0.8);
+    opacity: 0.95;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+[data-theme="dark"] .powered-logo:hover {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.3), inset 0 2px 5px rgba(255, 255, 255, 1);
+    opacity: 1;
+    transform: scale(1.08) translateY(-3px);
+}
+
+/* Premium SLIM Logo Effect */
+.slim-text-animated {
+    font-family: 'Impact', sans-serif;
+    font-size: 50px;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-top: 5px;
+    background: linear-gradient(110deg,
+            #3b82f6 0%,
+            #8b5cf6 30%,
+            #ffffff 45%,
+            /* The bright shine */
+            #3b82f6 60%,
+            #8b5cf6 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: holo-shimmer 4s linear infinite;
+}
+
+@keyframes holo-shimmer {
+    to {
+        background-position: 200% center;
+    }
+}
+
+@keyframes gradient-pan {
+    0% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Ultra-Premium Developer Badge */
+.developer-badge {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    background: linear-gradient(145deg, #181a1f, #282c34);
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid #3e4451;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 10px rgba(0, 0, 0, 0.3);
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: 1px;
+}
+
+.syn-bracket {
+    color: #89ddff;
+    text-shadow: 0 0 5px rgba(137, 221, 255, 0.4);
+}
+
+.syn-dev {
+    background: linear-gradient(90deg, #c792ea, #ff5370, #c792ea);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-pan 3s linear infinite;
+    margin: 0 2px;
+}
+
+.syn-cursor {
+    display: inline-block;
+    width: 6px;
+    height: 12px;
+    background-color: #82ffa8;
+    margin-left: 6px;
+    animation: blink-caret 1s step-end infinite;
+    box-shadow: 0 0 8px #82aaff;
+    border-radius: 1px;
+}
+
+@keyframes blink-caret {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
