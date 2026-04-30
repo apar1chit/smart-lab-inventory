@@ -201,11 +201,25 @@
     <!-- Mobile Sidebar (Offcanvas) -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileSidebar">
         <div class="offcanvas-header border-bottom">
-            <h5 class="offcanvas-title fw-bold text-dark d-flex align-items-center morph-logo">
-                <div class="logo-icon me-2"><i class="bi bi-boxes text-white"></i></div>
-                <div class="logo-text-container">
-                    <span class="logo-text main-text fs-5 fw-bold text-dark">Smart Lab</span>
-                    <span class="logo-text hover-text fs-6 fw-bold text-primary italic">Made By Kartik</span>
+            <h5 class="offcanvas-title fw-bold text-dark d-flex align-items-center morph-logo" style="margin-bottom: 0;">
+                <div class="me-1 d-flex justify-content-center align-items-center"
+                    style="width: 70px; height: 70px; margin-left: -10px;">
+                    <dotlottie-player src="{{ url_for('static', filename='logo.lottie') }}" background="transparent"
+                        speed="1" style="width: 70px; height: 70px;" loop autoplay></dotlottie-player>
+                </div>
+                <div class="logo-text-container" style="transform: scale(0.85); transform-origin: left center;">
+                    <div class="logo-text main-text">
+                        <span class="slim-text-animated">SLIM</span>
+                    </div>
+                    <div class="logo-text hover-text flex-column align-items-start justify-content-center"
+                        style="width: 100%;">
+                        <span class="text-muted fw-bold"
+                            style="font-size: 0.55rem; letter-spacing: 2px; margin-bottom: 3px; opacity: 0.8;">ENGINEERED
+                            BY</span>
+                        <div class="developer-badge">
+                            <span class="syn-bracket">&lt;</span><span class="syn-dev">Kartik</span><span class="syn-bracket">/&gt;</span><span class="syn-cursor"></span>
+                        </div>
+                    </div>
                 </div>
             </h5>
             <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>

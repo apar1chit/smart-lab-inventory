@@ -11,6 +11,12 @@
         <button id="resetLayoutBtn" class="btn btn-light shadow-sm d-none">
             <i class="bi bi-arrow-counterclockwise"></i> Reset
         </button>
+        {% if current_user.role in ['teacher', 'developer'] %}
+        <select id="targetRoleSelect" class="form-select d-none shadow-sm me-2 fw-bold text-primary border-primary bg-primary-subtle" style="width: auto;">
+            <option value="{{ current_user.role }}">Save for {{ current_user.role|capitalize }}s (My Role)</option>
+            <option value="student">Save for Students</option>
+        </select>
+        {% endif %}
         <button id="saveLayoutBtn" class="btn btn-primary d-none shadow-sm animate pulse">
             <i class="bi bi-check-all me-2"></i>Save Configuration
         </button>
@@ -165,7 +171,8 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card stat-card stat-card-success p-4 border-0 h-100 shadow-lg rounded-4 overflow-hidden bg-white">
+                <div
+                    class="card stat-card stat-card-success p-4 border-0 h-100 shadow-lg rounded-4 overflow-hidden bg-white">
                     <div class="card-glow"></div>
                     <div class="d-flex justify-content-between align-items-center position-relative">
                         <div>
@@ -213,7 +220,7 @@
                 </h5>
             </div>
             <div class="card-body d-flex justify-content-center align-items-center pb-4">
-                <div style="width: 220px; height: 220px;">
+                <div style="width: 250px; height: 250px; position: relative; filter: drop-shadow(0 15px 20px rgba(0,0,0,0.15));">
                     <canvas id="equipChart" data-util='{{ equip_utilization|tojson|safe }}'>
                     </canvas>
                 </div>
@@ -489,41 +496,83 @@
         const ctxEquip = document.getElementById('equipChart')?.getContext('2d');
         if (ctxEquip) {
             const utilData = JSON.parse(ctxEquip.canvas.dataset.util);
-            new Chart(ctxEquip, {
+            const equipChartInstance = new Chart(ctxEquip, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(utilData),
                     datasets: [{
                         data: Object.values(utilData),
-                        backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#6366f1'],
-                        hoverBackgroundColor: ['#059669', '#dc2626', '#d97706', '#4f46e5'],
-                        borderWidth: 5,
-                        borderColor: '#fff',
-                        hoverOffset: 15
+                        backgroundColor: ['#00f2fe', '#f093fb', '#f5576c', '#4facfe'],
+                        hoverBackgroundColor: ['#00e0eb', '#d884e2', '#db4e61', '#3d9ceb'],
+                        borderWidth: 3,
+                        borderColor: 'rgba(163, 174, 209, 0.25)',
+                        hoverOffset: 15,
+                        borderRadius: 5
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '75%',
+                    cutout: '80%',
+                    rotation: 0,
+                    layout: {
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    },
                     plugins: {
                         legend: {
                             position: 'bottom',
                             labels: {
                                 usePointStyle: true,
-                                padding: 25,
-                                font: { size: 12, weight: 'bold', family: 'Inter' },
-                                color: '#2b3674'
+                                pointStyle: 'circle',
+                                padding: 30,
+                                font: { size: 13, weight: '600', family: 'Inter' },
+                                color: '#a3aed1'
                             }
                         },
                         tooltip: {
-                            padding: 12,
-                            cornerRadius: 10,
-                            backgroundColor: '#2b3674'
+                            padding: 15,
+                            cornerRadius: 12,
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleFont: { size: 14, family: 'Inter' },
+                            bodyFont: { size: 14, weight: 'bold' },
+                            displayColors: true,
+                            usePointStyle: true,
+                            boxPadding: 8
                         }
                     }
                 }
             });
+
+            // Constant internal ring rotation (Pause on hover)
+            let currentRotation = 0;
+            let isHovered = false;
+            
+            const equipContainer = ctxEquip.canvas.parentElement;
+            equipContainer.addEventListener('mouseenter', () => isHovered = true);
+            equipContainer.addEventListener('mouseleave', () => isHovered = false);
+
+            function rotateRing() {
+                if (!isHovered) {
+                    currentRotation = (currentRotation + 0.3) % 360; // Slightly slower, premium feel
+                    equipChartInstance.options.rotation = currentRotation;
+                    equipChartInstance.update('none'); // Update without triggering entry animations
+                }
+                requestAnimationFrame(rotateRing);
+            }
+            
+            // Start the rotation smoothly after the 2000ms entry animation completes
+            setTimeout(() => {
+                requestAnimationFrame(rotateRing);
+            }, 2000);
         }
 
         // 3. Dynamic Layout Controls
@@ -542,6 +591,8 @@
                     editBtn.innerHTML = '<i class="bi bi-x-lg me-2"></i>Exit';
                     saveBtn.classList.remove('d-none');
                     resetBtn.classList.remove('d-none');
+                    const targetSelect = document.getElementById('targetRoleSelect');
+                    if (targetSelect) targetSelect.classList.remove('d-none');
 
                     document.querySelectorAll('.card-edit-overlay').forEach(el => el.classList.remove('d-none'));
                     document.querySelectorAll('.editing-only').forEach(el => el.classList.remove('d-none'));
@@ -599,10 +650,13 @@
                 saveBtn.disabled = true;
                 saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
 
+                const targetSelect = document.getElementById('targetRoleSelect');
+                const targetRole = targetSelect ? targetSelect.value : '{{ current_user.role }}';
+
                 fetch('/api/dashboard/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ configs: configs })
+                    body: JSON.stringify({ role: targetRole, configs: configs })
                 })
                     .then(res => res.json())
                     .then(data => {

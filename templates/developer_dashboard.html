@@ -43,15 +43,13 @@
                                     </span>
                                 </td>
                                 <td class="text-end px-4">
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-2" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">
+                                    <div class="d-flex align-items-center justify-content-end gap-2">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">
                                             Edit
                                         </button>
-                                        <form action="{{ url_for('dev_delete_user', id=user.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete user {{ user.username }}?')">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle" {% if user.id == current_user.id %}disabled{% endif %}>
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle" {% if user.id == current_user.id %}disabled{% endif %} title="Delete User" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ user.id }}">
+                                            <i class="bi bi-trash" style="pointer-events: none;"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -222,6 +220,25 @@
                     <button type="submit" class="btn btn-primary w-100 fw-bold">Update User</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-body text-center p-5">
+                <i class="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i>
+                <h4 class="fw-bold">Delete User?</h4>
+                <p class="text-muted">Are you sure you want to permanently delete <strong>{{ user.username }}</strong>? This action cannot be undone.</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <button type="button" class="btn btn-light px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('dev_delete_user', id=user.id) }}" method="POST" class="m-0 p-0">
+                        <button type="submit" class="btn btn-danger px-4 fw-bold">Yes, Delete</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>

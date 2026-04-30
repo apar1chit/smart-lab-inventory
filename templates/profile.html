@@ -191,6 +191,15 @@
                         <label class="form-label small fw-bold text-muted">PHONE NUMBER</label>
                         <input type="text" name="phone" class="form-control" value="{{ current_user.phone }}" required>
                     </div>
+                    <hr class="text-muted opacity-25 my-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">NEW PASSWORD <span class="fw-normal">(Optional)</span></label>
+                        <input type="password" name="new_password" class="form-control" placeholder="Leave blank to keep current">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">CONFIRM NEW PASSWORD</label>
+                        <input type="password" name="confirm_password" class="form-control" placeholder="Re-enter new password">
+                    </div>
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-3">Save Changes</button>
                 </div>
             </form>

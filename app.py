@@ -205,6 +205,16 @@ def profile():
 @login_required
 def update_profile():
     try:
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if new_password:
+            if new_password == confirm_password:
+                current_user.password_hash = generate_password_hash(new_password)
+            else:
+                flash('Passwords do not match. Profile update aborted.', 'danger')
+                return redirect(url_for('profile'))
+
         current_user.full_name = request.form.get('full_name')
         current_user.email = request.form.get('email')
         current_user.phone = request.form.get('phone')
@@ -239,11 +249,11 @@ def dashboard():
         Chemical.name, func.count(UsageLog.id).label('usage_count')
     ).join(UsageLog).filter(UsageLog.date >= thirty_days_ago).group_by(Chemical.name).order_by(func.count(UsageLog.id).desc()).limit(5).all()
 
-    # 4. Monthly Consumption (Combined Stock Change) - Last 6 months
+    # 4. Daily Consumption (Combined Stock Change) - Last 30 days
     consumption_data = db.session.query(
-        func.strftime('%Y-%m', UsageLog.date).label('month'),
+        func.strftime('%Y-%m-%d', UsageLog.date).label('day'),
         func.abs(func.sum(UsageLog.quantity_change)).label('total_consumption')
-    ).filter(UsageLog.quantity_change < 0).group_by('month').order_by('month').limit(6).all()
+    ).filter(UsageLog.quantity_change < 0, UsageLog.date >= thirty_days_ago).group_by('day').order_by('day').all()
     
     chart_labels = [d[0] for d in consumption_data]
     chart_values = [float(d[1]) for d in consumption_data]
@@ -860,13 +870,17 @@ def dev_edit_user(id):
 @app.route('/developer/user/<int:id>/delete', methods=['POST'])
 @developer_required
 def dev_delete_user(id):
-    user = User.query.get_or_404(id)
-    if user.id == current_user.id:
-        flash('Cannot delete yourself!', 'danger')
-    else:
-        db.session.delete(user)
-        db.session.commit()
-        flash(f'User {user.username} deleted.', 'success')
+    try:
+        user = User.query.get_or_404(id)
+        if user.id == current_user.id:
+            flash('Cannot delete yourself!', 'danger')
+        else:
+            db.session.delete(user)
+            db.session.commit()
+            flash(f'User {user.username} deleted.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting user: {str(e)}', 'danger')
     return redirect(url_for('developer_dashboard'))
 
 @app.route('/developer/logs/reset', methods=['POST'])
