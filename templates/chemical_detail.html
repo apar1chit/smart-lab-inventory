@@ -33,12 +33,23 @@
                 <h5 class="mb-0">Chemical Details</h5>
             </div>
             
-            <div class="card-body text-center p-3" style="background-color: #f8f9fa; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <img src="https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{{ chemical.name|urlencode }}/PNG" 
+            <div id="viewer-wrapper" class="card-body text-center p-3 position-relative" style="background-color: #f8f9fa; border-bottom: 1px solid rgba(0,0,0,0.05); height: 280px; overflow: hidden;">
+                <!-- Loading Spinner -->
+                <div id="viewer-loading" class="position-absolute top-50 start-50 translate-middle z-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading 3D Model...</span>
+                    </div>
+                </div>
+
+                <!-- 3Dmol Container -->
+                <div id="container-3d" class="d-none w-100 h-100 position-relative z-1"></div>
+
+                <!-- Fallback Static Image -->
+                <img id="fallback-img" src="https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{{ chemical.name|urlencode }}/PNG" 
                      alt="Structure of {{ chemical.name }}" 
-                     class="img-fluid rounded" 
-                     style="max-height: 180px; mix-blend-mode: multiply;"
-                     onerror="if(!this.fallbackLoaded){ this.fallbackLoaded=true; this.src='{{ fallback_image }}'; this.style.mixBlendMode='normal'; this.style.objectFit='cover'; this.style.width='100%'; } else { this.src='https://unpkg.com/lucide-static@latest/icons/flask-conical.svg'; this.style.opacity='0.5'; }">
+                     class="img-fluid rounded d-none position-absolute top-50 start-50 translate-middle z-2" 
+                     style="max-height: 220px; mix-blend-mode: multiply;"
+                     onerror="if(!this.fallbackLoaded){ this.fallbackLoaded=true; this.src='{{ fallback_image }}'; this.style.mixBlendMode='normal'; this.style.objectFit='cover'; this.style.width='90%'; } else { this.src='https://unpkg.com/lucide-static@latest/icons/flask-conical.svg'; this.style.opacity='0.5'; }">
             </div>
 
             <div class="card-body pt-2">
@@ -238,4 +249,76 @@
     </div>
   </div>
 </div>
+
+<!-- 3Dmol.js Library -->
+<script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const chemName = "{{ chemical.name|urlencode }}";
+    // Using PubChem PUG REST to get the 3D SDF
+    const sdfUrl = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/" + chemName + "/SDF?record_type=3d";
+    
+    const wrapper = document.getElementById("viewer-wrapper");
+    const loading = document.getElementById("viewer-loading");
+    const container3d = document.getElementById("container-3d");
+    const fallbackImg = document.getElementById("fallback-img");
+    
+    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+    const getBgColor = (dark) => dark ? "#1e1e1e" : "#f8f9fa";
+    
+    wrapper.style.backgroundColor = getBgColor(isDarkMode);
+
+    fetch(sdfUrl)
+        .then(response => {
+            if (!response.ok) throw new Error("3D model not found");
+            return response.text();
+        })
+        .then(sdfData => {
+            loading.classList.add("d-none");
+            container3d.classList.remove("d-none");
+            
+            let viewer = $3Dmol.createViewer(container3d, { backgroundColor: getBgColor(isDarkMode) });
+            viewer.addModel(sdfData, "sdf");
+            viewer.setStyle({}, { stick: { radius: 0.15 }, sphere: { scale: 0.3 } });
+            viewer.zoomTo();
+            viewer.render();
+            viewer.zoom(1.2, 1000);
+            
+            // Auto-spin animation
+            viewer.spin("y", 1);
+            
+            // Listen for theme toggles
+            const themeToggleBtn = document.getElementById('themeToggle');
+            if(themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    setTimeout(() => {
+                        const darkNow = document.documentElement.getAttribute('data-theme') === 'dark';
+                        const newBg = getBgColor(darkNow);
+                        wrapper.style.backgroundColor = newBg;
+                        viewer.setBackgroundColor(newBg);
+                        viewer.render();
+                    }, 50);
+                });
+            }
+        })
+        .catch(err => {
+            loading.classList.add("d-none");
+            fallbackImg.classList.remove("d-none");
+            
+            if (isDarkMode) fallbackImg.style.mixBlendMode = "normal";
+            
+            const themeToggleBtn = document.getElementById('themeToggle');
+            if(themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    setTimeout(() => {
+                        const darkNow = document.documentElement.getAttribute('data-theme') === 'dark';
+                        wrapper.style.backgroundColor = getBgColor(darkNow);
+                        fallbackImg.style.mixBlendMode = darkNow ? "normal" : "multiply";
+                    }, 50);
+                });
+            }
+        });
+});
+</script>
+
 {% endblock %}
