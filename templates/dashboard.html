@@ -297,7 +297,7 @@
                                     {% if log.quantity_change > 0 %}+{% endif %}{{ log.quantity_change }} {{
                                     log.chemical.unit if log.chemical else 'units' }}
                                 </span>
-                                <small class="text-muted fw-medium">{{ log.user_name }} • {{ log.date.strftime('%d %b')
+                                <small class="text-muted fw-medium">{{ get_display_name(log.user_name) }} • {{ log.date.strftime('%d %b')
                                     }}</small>
                             </div>
                         </li>

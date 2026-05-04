@@ -108,7 +108,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-medium">User / Student Name</label>
                             <input type="text" name="user_name" class="form-control" 
-                                   value="{{ current_user.full_name or current_user.username }}" 
+                                   value="{{ current_user.username }}" 
                                    {% if current_user.role != 'teacher' %}readonly{% endif %} required>
                         </div>
                         <div class="col-md-6">
@@ -163,7 +163,7 @@
                                         {{ log.action }}
                                     </span>
                                 </td>
-                                <td class="fw-medium">{{ log.user_name }}</td>
+                                <td class="fw-medium">{{ get_display_name(log.user_name) }}</td>
                                 <td class="fw-bold {% if log.quantity_change > 0 %}text-success{% else %}text-danger{% endif %}">
                                     {% if log.quantity_change > 0 %}+{% endif %}{{ log.quantity_change }} {{ chemical.unit }}
                                 </td>

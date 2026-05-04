@@ -96,7 +96,7 @@
                                     {% for log in chemical_logs %}
                                     <tr>
                                         <td class="ps-4 small text-muted">{{ log.date.strftime('%d %b, %H:%M') }}</td>
-                                        <td class="fw-medium">{{ log.user_name }}</td>
+                                        <td class="fw-medium">{{ get_display_name(log.user_name) }}</td>
                                         <td><span class="small">{{ log.action }}</span></td>
                                         <td class="text-end pe-4">
                                             <form action="{{ url_for('dev_delete_log', type='chemical', id=log.id) }}" method="POST" style="display: inline;">
@@ -124,7 +124,7 @@
                                     {% for log in glassware_logs %}
                                     <tr>
                                         <td class="ps-4 small text-muted">{{ log.date.strftime('%d %b, %H:%M') }}</td>
-                                        <td class="fw-medium">{{ log.user_name }}</td>
+                                        <td class="fw-medium">{{ get_display_name(log.user_name) }}</td>
                                         <td><span class="small">{{ log.action }}</span></td>
                                         <td class="text-end pe-4">
                                             <form action="{{ url_for('dev_delete_log', type='glassware', id=log.id) }}" method="POST" style="display: inline;">
@@ -152,7 +152,7 @@
                                     {% for log in equipment_logs %}
                                     <tr>
                                         <td class="ps-4 small text-muted">{{ log.date.strftime('%d %b, %H:%M') }}</td>
-                                        <td class="fw-medium">{{ log.user_name }}</td>
+                                        <td class="fw-medium">{{ get_display_name(log.user_name) }}</td>
                                         <td><span class="small">{{ log.action }}</span></td>
                                         <td class="text-end pe-4">
                                             <form action="{{ url_for('dev_delete_log', type='equipment', id=log.id) }}" method="POST" style="display: inline;">

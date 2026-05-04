@@ -10,7 +10,7 @@ import csv
 import io
 from flask import Response, jsonify
 from datetime import datetime, timedelta
-from sqlalchemy import func
+from sqlalchemy import func, or_
 app = Flask(__name__)
 # Production Config: Use environment variables if available
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key-12345')
@@ -145,6 +145,19 @@ def developer_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.context_processor
+def inject_user_map():
+    # Cache user map per request to avoid N+1 query problem when listing logs
+    users = User.query.all()
+    user_map = {u.username.lower(): (u.full_name.title() if u.full_name else u.username.title()) for u in users}
+    
+    def get_display_name(raw_name):
+        if not raw_name:
+            return "Unknown"
+        return user_map.get(raw_name.lower(), raw_name.title())
+        
+    return dict(get_display_name=get_display_name)
+
 # --- Routes ---
 
 @app.route('/login', methods=['POST'])
@@ -169,11 +182,27 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    # Fetch all activity for the current user (case-insensitive username match)
+    # Fetch all activity for the current user (case-insensitive username match or full name match)
     username_lower = current_user.username.lower()
-    chemical_logs = UsageLog.query.filter(func.lower(UsageLog.user_name) == username_lower).order_by(UsageLog.date.desc()).all()
-    glassware_logs = GlasswareLog.query.filter(func.lower(UsageLog.user_name) == username_lower).order_by(GlasswareLog.date.desc()).all()
-    equipment_logs = EquipmentLog.query.filter(func.lower(UsageLog.user_name) == username_lower).order_by(EquipmentLog.date.desc()).all()
+    full_name_lower = current_user.full_name.lower() if current_user.full_name else None
+
+    # Chemical Logs
+    chem_filter = func.lower(UsageLog.user_name) == username_lower
+    if full_name_lower:
+        chem_filter = or_(chem_filter, func.lower(UsageLog.user_name) == full_name_lower)
+    chemical_logs = UsageLog.query.filter(chem_filter).order_by(UsageLog.date.desc()).all()
+
+    # Glassware Logs
+    glass_filter = func.lower(GlasswareLog.user_name) == username_lower
+    if full_name_lower:
+        glass_filter = or_(glass_filter, func.lower(GlasswareLog.user_name) == full_name_lower)
+    glassware_logs = GlasswareLog.query.filter(glass_filter).order_by(GlasswareLog.date.desc()).all()
+
+    # Equipment Logs
+    equip_filter = func.lower(EquipmentLog.user_name) == username_lower
+    if full_name_lower:
+        equip_filter = or_(equip_filter, func.lower(EquipmentLog.user_name) == full_name_lower)
+    equipment_logs = EquipmentLog.query.filter(equip_filter).order_by(EquipmentLog.date.desc()).all()
     
     # Calculate stats
     total_sessions = len(chemical_logs) + len(glassware_logs) + len(equipment_logs)
